@@ -2,14 +2,12 @@
  * Central export point for game logic
  */
 
-// Core game constants and configuration
+// Core game engine
 export * from './core/constants';
+export * from './core/gameStateManager';
+export * from './core/gameLoop';
 
 // Game mechanics
 export * from './mechanics/drinks';
-
-// Future exports will be added as modules are created
-// export * from './core/gameLoop';
-// export * from './core/stateManager';
-// export * from './mechanics/scoring';
-// export * from './events/eventSystem';
+export * from './mechanics/caffeineSystem';
+export * from './mechanics/scoringSystem';
