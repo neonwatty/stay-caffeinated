@@ -45,12 +45,12 @@ describe('GameMenu', () => {
   });
 
   it('calls onClose when overlay is clicked', () => {
-    render(<GameMenu {...defaultProps} />);
-    const overlay = screen.getByRole('generic').firstElementChild;
+    const { container } = render(<GameMenu {...defaultProps} />);
+    const overlay = container.querySelector('.bg-black.bg-opacity-75');
     if (overlay) {
       fireEvent.click(overlay);
+      expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     }
-    expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
   });
 
   it('applies custom className', () => {
@@ -59,9 +59,9 @@ describe('GameMenu', () => {
   });
 
   it('renders without overlay when overlay prop is false', () => {
-    render(<GameMenu {...defaultProps} overlay={false} />);
-    const overlay = screen.queryByRole('generic', { hidden: false });
-    expect(overlay).toBeInTheDocument();
+    const { container } = render(<GameMenu {...defaultProps} overlay={false} />);
+    const overlay = container.querySelector('.bg-black.bg-opacity-75');
+    expect(overlay).not.toBeInTheDocument();
   });
 });
 

@@ -102,6 +102,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           }`}
           role="switch"
           aria-checked={settings.soundEnabled}
+          aria-label="Sound Effects"
         >
           <div
             className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -123,6 +124,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           onChange={(e) => handleSettingChange('soundVolume', parseInt(e.target.value))}
           disabled={!settings.soundEnabled}
           className="w-full"
+          aria-label="Sound Volume"
         />
       </div>
 
@@ -135,6 +137,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           }`}
           role="switch"
           aria-checked={settings.musicEnabled}
+          aria-label="Background Music"
         >
           <div
             className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -156,6 +159,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           onChange={(e) => handleSettingChange('musicVolume', parseInt(e.target.value))}
           disabled={!settings.musicEnabled}
           className="w-full"
+          aria-label="Music Volume"
         />
       </div>
     </div>
@@ -172,6 +176,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           }`}
           role="switch"
           aria-checked={settings.notificationsEnabled}
+          aria-label="Notifications"
         >
           <div
             className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -190,6 +195,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           }`}
           role="switch"
           aria-checked={settings.autoSave}
+          aria-label="Auto-Save"
         >
           <div
             className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -201,13 +207,15 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
       {settings.autoSave && (
         <div className="space-y-2">
-          <label className="text-gray-700 dark:text-gray-300">
+          <label htmlFor="autosave-interval-select" className="text-gray-700 dark:text-gray-300">
             Auto-Save Interval
           </label>
           <select
+            id="autosave-interval-select"
             value={settings.autoSaveInterval}
             onChange={(e) => handleSettingChange('autoSaveInterval', parseInt(e.target.value))}
             className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
+            aria-label="Auto-Save Interval"
           >
             <option value={30}>30 seconds</option>
             <option value={60}>1 minute</option>
@@ -226,6 +234,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           }`}
           role="switch"
           aria-checked={settings.showTutorial}
+          aria-label="Show Tutorial"
         >
           <div
             className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -248,6 +257,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           }`}
           role="switch"
           aria-checked={settings.reducedMotion}
+          aria-label="Reduced Motion"
         >
           <div
             className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -266,6 +276,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           }`}
           role="switch"
           aria-checked={settings.colorBlindMode}
+          aria-label="Color Blind Mode"
         >
           <div
             className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -276,11 +287,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-gray-700 dark:text-gray-300">Theme</label>
+        <label htmlFor="theme-select" className="text-gray-700 dark:text-gray-300">Theme</label>
         <select
+          id="theme-select"
           value={settings.theme}
           onChange={(e) => handleSettingChange('theme', e.target.value as GameSettings['theme'])}
           className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
+          aria-label="Theme"
         >
           <option value="system">System</option>
           <option value="light">Light</option>
@@ -289,11 +302,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-gray-700 dark:text-gray-300">Language</label>
+        <label htmlFor="language-select" className="text-gray-700 dark:text-gray-300">Language</label>
         <select
+          id="language-select"
           value={settings.language}
           onChange={(e) => handleSettingChange('language', e.target.value as GameSettings['language'])}
           className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
+          aria-label="Language"
         >
           <option value="en">English</option>
           <option value="es">Español</option>

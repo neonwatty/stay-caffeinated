@@ -50,7 +50,7 @@ describe('SettingsMenu', () => {
 
   it('toggles sound enabled', () => {
     render(<SettingsMenu {...defaultProps} />);
-    const soundToggle = screen.getByRole('switch', { name: /Sound Effects/i });
+    const soundToggle = screen.getByRole('switch', { name: 'Sound Effects' });
 
     expect(soundToggle).toHaveAttribute('aria-checked', 'true');
     fireEvent.click(soundToggle);
@@ -59,7 +59,7 @@ describe('SettingsMenu', () => {
 
   it('changes sound volume', () => {
     render(<SettingsMenu {...defaultProps} />);
-    const volumeSlider = screen.getByRole('slider', { name: /Sound Volume/i });
+    const volumeSlider = screen.getByRole('slider', { name: 'Sound Volume' });
 
     fireEvent.change(volumeSlider, { target: { value: '85' } });
     expect(screen.getByText('Sound Volume: 85%')).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('SettingsMenu', () => {
     render(<SettingsMenu {...defaultProps} />);
     fireEvent.click(screen.getByText('Gameplay'));
 
-    const autoSaveToggle = screen.getByRole('switch', { name: /Auto-Save/i });
+    const autoSaveToggle = screen.getByRole('switch', { name: 'Auto-Save' });
     expect(screen.getByText('Auto-Save Interval')).toBeInTheDocument();
 
     fireEvent.click(autoSaveToggle);
@@ -80,7 +80,7 @@ describe('SettingsMenu', () => {
     render(<SettingsMenu {...defaultProps} />);
     fireEvent.click(screen.getByText('Accessibility'));
 
-    const themeSelect = screen.getByLabelText('Theme');
+    const themeSelect = screen.getByRole('combobox', { name: 'Theme' });
     fireEvent.change(themeSelect, { target: { value: 'dark' } });
     expect(themeSelect).toHaveValue('dark');
   });
@@ -90,7 +90,7 @@ describe('SettingsMenu', () => {
 
     expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
 
-    const soundToggle = screen.getByRole('switch', { name: /Sound Effects/i });
+    const soundToggle = screen.getByRole('switch', { name: 'Sound Effects' });
     fireEvent.click(soundToggle);
 
     expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe('SettingsMenu', () => {
   it('saves settings when save button clicked', () => {
     render(<SettingsMenu {...defaultProps} />);
 
-    const soundToggle = screen.getByRole('switch', { name: /Sound Effects/i });
+    const soundToggle = screen.getByRole('switch', { name: 'Sound Effects' });
     fireEvent.click(soundToggle);
 
     const saveButton = screen.getByText('Save Settings');
@@ -114,7 +114,7 @@ describe('SettingsMenu', () => {
     render(<SettingsMenu {...defaultProps} />);
     fireEvent.click(screen.getByText('Gameplay'));
 
-    const autoSaveToggle = screen.getByRole('switch', { name: /Auto-Save/i });
+    const autoSaveToggle = screen.getByRole('switch', { name: 'Auto-Save' });
     fireEvent.click(autoSaveToggle);
 
     const resetButton = screen.getByText('Reset to Defaults');
@@ -126,7 +126,7 @@ describe('SettingsMenu', () => {
   it('cancels changes when cancel button clicked', () => {
     render(<SettingsMenu {...defaultProps} />);
 
-    const soundToggle = screen.getByRole('switch', { name: /Sound Effects/i });
+    const soundToggle = screen.getByRole('switch', { name: 'Sound Effects' });
     fireEvent.click(soundToggle);
 
     const cancelButton = screen.getByText('Cancel');
@@ -140,7 +140,7 @@ describe('SettingsMenu', () => {
     localStorage.setItem('stayCaffeinatedSettings', JSON.stringify(customSettings));
 
     render(<SettingsMenu {...defaultProps} />);
-    const soundToggle = screen.getByRole('switch', { name: /Sound Effects/i });
+    const soundToggle = screen.getByRole('switch', { name: 'Sound Effects' });
     expect(soundToggle).toHaveAttribute('aria-checked', 'false');
   });
 });
