@@ -5,6 +5,10 @@
 export * from './game';
 export * from './drinks';
 export * from './events';
+export * from './animations';
+export * from './ui';
+export * from './achievements';
+export * from './audio';
 
 // Re-export commonly used types for convenience
 export type {
@@ -16,3 +20,7 @@ export type {
 
 export type { DrinkType } from './drinks';
 export type { EventType } from './events';
+export type { AnimationType } from './animations';
+export type { ButtonVariant } from './ui';
+export type { AchievementCategory } from './achievements';
+export type { SoundEffect, MusicTrack } from './audio';
