@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Monitor, MonitorContent, CodeEditor } from './Monitor';
 import { Desk, CoffeeCup, generateCoffeeCup, DeskAccessories } from './Desk';
 import { Character } from './Character';

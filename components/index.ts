@@ -21,7 +21,8 @@ export { Header, Breadcrumbs } from './layout/Header';
 export { StatusBars, OptimalZoneIndicator, GameStats } from './game/StatusBars';
 export { CaffeineBar, CaffeineGauge } from './game/CaffeineBar';
 export { HealthBar, HealthMeter, HealthTrend } from './game/HealthBar';
-export { DrinkSelector } from './game/DrinkSelector';
+export { DrinkSelector, DrinkDropZone } from './game/DrinkSelector';
+export { DrinkItem, DrinkIcon, getDrinkDefaults } from './game/DrinkItem';
 export { Character, CharacterMood, AnimatedCharacter } from './game/Character';
 export {
   UnderCaffeinatedCharacter,

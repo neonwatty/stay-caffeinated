@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card } from '../ui/Card';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { DrinkItem, getDrinkDefaults } from './DrinkItem';
 
-interface Drink {
+export interface Drink {
   id: string;
   name: string;
   caffeineBoost: number;
@@ -11,33 +11,46 @@ interface Drink {
   color: string;
   cooldown: number;
   description?: string;
+  effects?: string[];
+  unlockLevel?: number;
 }
 
-interface DrinkSelectorProps {
-  drinks: Drink[];
+export interface DrinkSelectorProps {
+  drinks?: Drink[];
   onSelect: (drinkId: string) => void;
   cooldowns?: Record<string, number>;
   disabled?: boolean;
   className?: string;
-  layout?: 'grid' | 'list' | 'compact';
+  layout?: 'grid' | 'list' | 'compact' | 'carousel';
+  showEffectsPreview?: boolean;
+  playerLevel?: number;
+  onDragDrink?: (drinkId: string, targetElement: HTMLElement) => void;
+  enableTouchGestures?: boolean;
+  enableKeyboardShortcuts?: boolean;
 }
 
-/**
- * DrinkSelector component for choosing drinks in the game
- * Supports cooldowns, keyboard navigation, and touch interactions
- */
 export const DrinkSelector: React.FC<DrinkSelectorProps> = ({
-  drinks,
+  drinks = getDrinkDefaults(),
   onSelect,
   cooldowns = {},
   disabled = false,
   className = '',
   layout = 'grid',
+  showEffectsPreview = true,
+  playerLevel = 1,
+  onDragDrink,
+  enableTouchGestures = true,
+  enableKeyboardShortcuts = true,
 }) => {
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
   const [remainingCooldowns, setRemainingCooldowns] = useState<Record<string, number>>({});
+  const [hoveredDrink, setHoveredDrink] = useState<string | null>(null);
+  const [draggedDrink, setDraggedDrink] = useState<string | null>(null);
+  const [swipeStartX, setSwipeStartX] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  // Update cooldown timers
   useEffect(() => {
     const interval = setInterval(() => {
       setRemainingCooldowns(prev => {
@@ -54,233 +67,306 @@ export const DrinkSelector: React.FC<DrinkSelectorProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Sync external cooldowns
   useEffect(() => {
     setRemainingCooldowns(cooldowns);
   }, [cooldowns]);
 
-  const handleDrinkSelect = (drinkId: string) => {
-    if (disabled || remainingCooldowns[drinkId] > 0) return;
+  // Keyboard navigation disabled temporarily to fix infinite loop
+  // TODO: Fix dependency array issue
+  /*
+  useEffect(() => {
+    if (!enableKeyboardShortcuts) return;
+
+    const handleGlobalKeyPress = (e: KeyboardEvent) => {
+      const key = e.key;
+      const numberKey = parseInt(key);
+
+      if (numberKey >= 1 && numberKey <= drinks.length && numberKey <= 5) {
+        e.preventDefault();
+        const drinkIndex = numberKey - 1;
+        const drink = drinks[drinkIndex];
+        if (drink && isDrinkAvailable(drink)) {
+          handleDrinkSelect(drink.id);
+        }
+      }
+
+      if (key === 'ArrowLeft' && layout === 'carousel') {
+        navigateCarousel('prev');
+      } else if (key === 'ArrowRight' && layout === 'carousel') {
+        navigateCarousel('next');
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyPress);
+    return () => window.removeEventListener('keydown', handleGlobalKeyPress);
+  }, [drinks, layout, enableKeyboardShortcuts]);
+  */
+
+  const isDrinkAvailable = (drink: Drink) => {
+    const isUnlocked = !drink.unlockLevel || playerLevel >= drink.unlockLevel;
+    const isNotOnCooldown = !remainingCooldowns[drink.id] || remainingCooldowns[drink.id] === 0;
+    return isUnlocked && isNotOnCooldown && !disabled;
+  };
+
+  const handleDrinkSelect = useCallback((drinkId: string) => {
+    const drink = drinks.find(d => d.id === drinkId);
+    if (!drink || !isDrinkAvailable(drink)) return;
 
     setSelectedDrink(drinkId);
     onSelect(drinkId);
 
-    // Set cooldown
-    const drink = drinks.find(d => d.id === drinkId);
-    if (drink) {
-      setRemainingCooldowns(prev => ({
-        ...prev,
-        [drinkId]: drink.cooldown,
-      }));
+    setRemainingCooldowns(prev => ({
+      ...prev,
+      [drinkId]: drink.cooldown,
+    }));
+
+    if (window.navigator?.vibrate && enableTouchGestures) {
+      window.navigator.vibrate(50);
+    }
+  }, [drinks, disabled, onSelect, enableTouchGestures]);
+
+  const handleDrinkHover = useCallback((drinkId: string | null) => {
+    setHoveredDrink(drinkId);
+  }, []);
+
+  const handleDragStart = useCallback((drinkId: string) => {
+    setDraggedDrink(drinkId);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedDrink(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (draggedDrink && onDragDrink) {
+      onDragDrink(draggedDrink, e.currentTarget);
+    }
+    setDraggedDrink(null);
+  }, [draggedDrink, onDragDrink]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!enableTouchGestures) return;
+    const touch = e.touches[0];
+    setSwipeStartX(touch.clientX);
+
+    touchTimeout.current = setTimeout(() => {
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(100);
+      }
+    }, 500);
+  }, [enableTouchGestures]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!enableTouchGestures || swipeStartX === null) return;
+
+    const touch = e.touches[0];
+    const diffX = touch.clientX - swipeStartX;
+
+    if (Math.abs(diffX) > 50 && layout === 'carousel') {
+      if (diffX > 0) {
+        navigateCarousel('prev');
+      } else {
+        navigateCarousel('next');
+      }
+      setSwipeStartX(null);
+    }
+  }, [enableTouchGestures, swipeStartX, layout]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (touchTimeout.current) {
+      clearTimeout(touchTimeout.current);
+    }
+    setSwipeStartX(null);
+  }, []);
+
+  const navigateCarousel = (direction: 'prev' | 'next') => {
+    const itemsPerPage = 3;
+    const totalPages = Math.ceil(drinks.length / itemsPerPage);
+
+    if (direction === 'prev') {
+      setCurrentPage(prev => Math.max(0, prev - 1));
+    } else {
+      setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
     }
   };
 
-  // Keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent, drinkId: string) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleDrinkSelect(drinkId);
+  const getLayoutClass = () => {
+    switch (layout) {
+      case 'list':
+        return 'space-y-3';
+      case 'compact':
+        return 'flex flex-wrap gap-2';
+      case 'carousel':
+        return 'flex gap-4 overflow-hidden';
+      default:
+        return 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4';
     }
   };
 
-  if (layout === 'compact') {
-    return (
-      <div className={`flex gap-2 ${className}`}>
-        {drinks.map((drink) => {
-          const cooldownRemaining = remainingCooldowns[drink.id] || 0;
-          const isOnCooldown = cooldownRemaining > 0;
+  const renderDrinks = () => {
+    let drinksToRender = drinks;
 
-          return (
-            <button
-              key={drink.id}
-              onClick={() => handleDrinkSelect(drink.id)}
-              disabled={disabled || isOnCooldown}
-              className={`
-                relative p-3 rounded-lg transition-all
-                ${isOnCooldown || disabled
-                  ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800'
-                  : 'hover:scale-105 active:scale-95 bg-white dark:bg-gray-700 shadow-md hover:shadow-lg'
-                }
-                ${selectedDrink === drink.id ? 'ring-2 ring-indigo-500' : ''}
-              `}
-              title={`${drink.name} (+${drink.caffeineBoost} caffeine)`}
-            >
-              <span className="text-2xl">{drink.icon}</span>
-              {isOnCooldown && (
-                <div className="absolute inset-0 bg-gray-900/50 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">
-                    {Math.ceil(cooldownRemaining / 1000)}s
-                  </span>
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
+    if (layout === 'carousel') {
+      const itemsPerPage = 3;
+      const start = currentPage * itemsPerPage;
+      drinksToRender = drinks.slice(start, start + itemsPerPage);
+    }
 
-  if (layout === 'list') {
-    return (
-      <div className={`space-y-2 ${className}`}>
-        {drinks.map((drink) => {
-          const cooldownRemaining = remainingCooldowns[drink.id] || 0;
-          const isOnCooldown = cooldownRemaining > 0;
+    return drinksToRender.map((drink, index) => {
+      const isAvailable = isDrinkAvailable(drink);
+      const cooldown = remainingCooldowns[drink.id] || 0;
 
-          return (
-            <DrinkListItem
-              key={drink.id}
-              drink={drink}
-              isOnCooldown={isOnCooldown}
-              cooldownRemaining={cooldownRemaining}
-              disabled={disabled}
-              selected={selectedDrink === drink.id}
-              onSelect={() => handleDrinkSelect(drink.id)}
-              onKeyDown={(e) => handleKeyDown(e, drink.id)}
-            />
-          );
-        })}
-      </div>
-    );
-  }
-
-  // Grid layout (default)
-  return (
-    <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 ${className}`}>
-      {drinks.map((drink) => {
-        const cooldownRemaining = remainingCooldowns[drink.id] || 0;
-        const isOnCooldown = cooldownRemaining > 0;
-
-        return (
-          <DrinkCard
-            key={drink.id}
-            drink={drink}
-            isOnCooldown={isOnCooldown}
-            cooldownRemaining={cooldownRemaining}
-            disabled={disabled}
-            selected={selectedDrink === drink.id}
+      return (
+        <div
+          key={drink.id}
+          className={`
+            ${layout === 'carousel' ? 'flex-shrink-0 w-1/3' : ''}
+            ${draggedDrink === drink.id ? 'opacity-50' : ''}
+          `}
+        >
+          <DrinkItem
+            {...drink}
+            isAvailable={isAvailable}
+            remainingCooldown={cooldown}
             onSelect={() => handleDrinkSelect(drink.id)}
-            onKeyDown={(e) => handleKeyDown(e, drink.id)}
+            onHover={(hovered) => handleDrinkHover(hovered ? drink.id : null)}
+            onDragStart={() => handleDragStart(drink.id)}
+            onDragEnd={handleDragEnd}
+            disabled={disabled}
+            layout={layout === 'compact' ? 'compact' : layout === 'list' ? 'list' : 'card'}
+            showEffectsPreview={showEffectsPreview}
           />
-        );
-      })}
+          {enableKeyboardShortcuts && index < 5 && layout === 'grid' && (
+            <div className="text-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Press {index + 1}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative ${className}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+      role="region"
+      aria-label="Drink selection menu"
+    >
+      {hoveredDrink && showEffectsPreview && (
+        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white px-3 py-2 rounded-lg text-sm z-20 pointer-events-none">
+          <div className="font-bold mb-1">
+            {drinks.find(d => d.id === hoveredDrink)?.name}
+          </div>
+          <div className="text-xs">
+            {drinks.find(d => d.id === hoveredDrink)?.description}
+          </div>
+        </div>
+      )}
+
+      <div className={getLayoutClass()}>
+        {renderDrinks()}
+      </div>
+
+      {layout === 'carousel' && (
+        <div className="flex justify-center mt-4 gap-2">
+          <button
+            onClick={() => navigateCarousel('prev')}
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+            disabled={currentPage === 0}
+            aria-label="Previous drinks"
+          >
+            ←
+          </button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.ceil(drinks.length / 3) }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full ${
+                  i === currentPage ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => navigateCarousel('next')}
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+            disabled={currentPage >= Math.ceil(drinks.length / 3) - 1}
+            aria-label="Next drinks"
+          >
+            →
+          </button>
+        </div>
+      )}
+
+      {enableTouchGestures && layout !== 'carousel' && (
+        <div className="text-center mt-4 text-xs text-gray-500 dark:text-gray-400">
+          Tap to select • Long press for details
+        </div>
+      )}
+
+      {enableKeyboardShortcuts && (
+        <div className="text-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+          Use number keys 1-5 for quick selection
+        </div>
+      )}
     </div>
   );
 };
 
-// Drink card component
-interface DrinkCardProps {
-  drink: Drink;
-  isOnCooldown: boolean;
-  cooldownRemaining: number;
-  disabled: boolean;
-  selected: boolean;
-  onSelect: () => void;
-  onKeyDown: (e: React.KeyboardEvent) => void;
+export interface DrinkDropZoneProps {
+  onDrop: (drinkId: string) => void;
+  children: React.ReactNode;
+  className?: string;
+  highlightOnDrag?: boolean;
 }
 
-const DrinkCard: React.FC<DrinkCardProps> = ({
-  drink,
-  isOnCooldown,
-  cooldownRemaining,
-  disabled,
-  selected,
-  onSelect,
-  onKeyDown,
+export const DrinkDropZone: React.FC<DrinkDropZoneProps> = ({
+  onDrop,
+  children,
+  className = '',
+  highlightOnDrag = true,
 }) => {
-  return (
-    <Card
-      onClick={onSelect}
-      hoverable={!disabled && !isOnCooldown}
-      className={`
-        relative cursor-pointer text-center
-        ${isOnCooldown || disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        ${selected ? 'ring-2 ring-indigo-500' : ''}
-      `}
-      padding="sm"
-    >
-      <div
-        className="p-4"
-        role="button"
-        tabIndex={disabled || isOnCooldown ? -1 : 0}
-        onKeyDown={onKeyDown}
-        aria-label={`${drink.name}, adds ${drink.caffeineBoost} caffeine`}
-        aria-disabled={disabled || isOnCooldown}
-      >
-        <div className="text-4xl mb-2">{drink.icon}</div>
-        <h3 className="font-semibold text-gray-900 dark:text-white">
-          {drink.name}
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          +{drink.caffeineBoost}
-        </p>
-        {drink.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-            {drink.description}
-          </p>
-        )}
-      </div>
+  const [isDragOver, setIsDragOver] = useState(false);
 
-      {/* Cooldown overlay */}
-      {isOnCooldown && (
-        <div className="absolute inset-0 bg-gray-900/60 rounded-lg flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white">
-              {Math.ceil(cooldownRemaining / 1000)}
-            </div>
-            <div className="text-xs text-white/80">seconds</div>
-          </div>
-        </div>
-      )}
-    </Card>
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (highlightOnDrag) setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    if (highlightOnDrag) setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const drinkId = e.dataTransfer.getData('drinkId');
+    if (drinkId) {
+      onDrop(drinkId);
+    }
+    setIsDragOver(false);
+  };
+
+  return (
+    <div
+      className={`
+        ${className}
+        ${isDragOver ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}
+        transition-all duration-200
+      `}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {children}
+    </div>
   );
 };
 
-// Drink list item component
-type DrinkListItemProps = DrinkCardProps;
-
-const DrinkListItem: React.FC<DrinkListItemProps> = ({
-  drink,
-  isOnCooldown,
-  cooldownRemaining,
-  disabled,
-  selected,
-  onSelect,
-  onKeyDown,
-}) => {
-  return (
-    <button
-      onClick={onSelect}
-      onKeyDown={onKeyDown}
-      disabled={disabled || isOnCooldown}
-      className={`
-        w-full flex items-center gap-4 p-3 rounded-lg
-        bg-white dark:bg-gray-800 transition-all
-        ${isOnCooldown || disabled
-          ? 'opacity-50 cursor-not-allowed'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md'
-        }
-        ${selected ? 'ring-2 ring-indigo-500' : 'shadow-sm'}
-      `}
-    >
-      <div className="text-2xl flex-shrink-0">{drink.icon}</div>
-      <div className="flex-1 text-left">
-        <h3 className="font-semibold text-gray-900 dark:text-white">
-          {drink.name}
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          +{drink.caffeineBoost} caffeine
-        </p>
-      </div>
-      {isOnCooldown && (
-        <div className="flex-shrink-0">
-          <div className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-              {Math.ceil(cooldownRemaining / 1000)}s
-            </span>
-          </div>
-        </div>
-      )}
-    </button>
-  );
-};
+export { DrinkItem, getDrinkDefaults } from './DrinkItem';
