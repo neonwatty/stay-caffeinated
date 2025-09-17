@@ -83,8 +83,8 @@ export class GameStateManager {
   // State transitions
   startGame(): void {
     this.state.state = 'playing';
-    this.state.startTime = Date.now();
-    this.state.lastUpdateTime = Date.now();
+    this.state.startTime = performance.now();
+    this.state.lastUpdateTime = performance.now();
     this.state.gameTime = 0;
     this.state.realTimeElapsed = 0;
     this.state.stats = {
@@ -111,7 +111,7 @@ export class GameStateManager {
     if (this.state.state === 'paused') {
       this.state.state = 'playing';
       this.state.isPaused = false;
-      this.state.lastUpdateTime = Date.now();
+      this.state.lastUpdateTime = performance.now();
       this.notifyListeners();
     }
   }
@@ -199,7 +199,8 @@ export class GameStateManager {
     const difficulty = DIFFICULTY_CONFIGS[this.state.config.difficulty];
     const gameTimeScale = (difficulty.workdayLength * 60 * 1000) / WORKDAY_REAL_TIME;
     this.state.gameTime += (deltaTime * gameTimeScale) / 1000;
-    this.state.stats.timeElapsed = this.state.gameTime;
+    // timeElapsed should track real time, not scaled game time
+    this.state.stats.timeElapsed = this.state.realTimeElapsed / 1000;
 
     // Update caffeine depletion
     const caffeineDepletion = -difficulty.caffeineDepletionRate * (deltaTime / 1000);
