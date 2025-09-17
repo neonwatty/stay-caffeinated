@@ -7,19 +7,16 @@
  * - /layout - Layout components
  */
 
-// Future exports will be added as components are created
-// Game components
-// export { StatusBars } from './game/StatusBars';
-// export { Character } from './game/Character';
-// export { Workspace } from './game/Workspace';
-// export { DrinkSelector } from './game/DrinkSelector';
+// UI Components
+export { Button, ButtonGroup } from './ui/Button';
+export { Card, CardHeader, CardBody, CardFooter, CardGrid } from './ui/Card';
+export { Modal, ModalFooter } from './ui/Modal';
+export { ProgressBar, MultiProgressBar, CircularProgress } from './ui/ProgressBar';
 
-// UI components
-// export { Button } from './ui/Button';
-// export { Modal } from './ui/Modal';
-// export { Card } from './ui/Card';
+// Layout Components
+export { Container, Section, Grid, Flex, Spacer } from './layout/Container';
+export { Header, Breadcrumbs } from './layout/Header';
 
-// Layout components
-// export { Header } from './layout/Header';
-// export { Footer } from './layout/Footer';
-// export { Container } from './layout/Container';
+// Game Components
+export { StatusBars, OptimalZoneIndicator } from './game/StatusBars';
+export { DrinkSelector } from './game/DrinkSelector';
