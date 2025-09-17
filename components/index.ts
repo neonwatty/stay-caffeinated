@@ -34,3 +34,10 @@ export { Workspace, WorkspaceScene } from './game/Workspace';
 export { Monitor, MonitorContent, CodeEditor } from './game/Monitor';
 export { Desk, DeskAccessories, generateCoffeeCup, type CoffeeCup } from './game/Desk';
 export { TimeDisplay, ClockFace, DayProgress, formatGameTime, getTimeSpeed, type GameTime } from './game/TimeDisplay';
+
+// Menu Components
+export { GameMenu, MenuButton, MenuSection, type GameMenuProps, type MenuButtonProps, type MenuSectionProps } from './game/GameMenu';
+export { StartScreen, QuickStart, type StartScreenProps, type DifficultyLevel, type DifficultyOption } from './game/StartScreen';
+export { PauseMenu, QuickPause, type PauseMenuProps, type GamePauseStats } from './game/PauseMenu';
+export { GameOverScreen, clearHighScores, getTopHighScores, type GameOverScreenProps, type GameScore, type HighScore, type GameOverReason } from './game/GameOverScreen';
+export { SettingsMenu, loadSettings, saveSettings, resetSettings, DEFAULT_SETTINGS, type SettingsMenuProps, type GameSettings } from './game/SettingsMenu';
