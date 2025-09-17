@@ -18,5 +18,7 @@ export { Container, Section, Grid, Flex, Spacer } from './layout/Container';
 export { Header, Breadcrumbs } from './layout/Header';
 
 // Game Components
-export { StatusBars, OptimalZoneIndicator } from './game/StatusBars';
+export { StatusBars, OptimalZoneIndicator, GameStats } from './game/StatusBars';
+export { CaffeineBar, CaffeineGauge } from './game/CaffeineBar';
+export { HealthBar, HealthMeter, HealthTrend } from './game/HealthBar';
 export { DrinkSelector } from './game/DrinkSelector';
