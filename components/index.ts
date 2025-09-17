@@ -33,3 +33,4 @@ export {
 export { Workspace, WorkspaceScene } from './game/Workspace';
 export { Monitor, MonitorContent, CodeEditor } from './game/Monitor';
 export { Desk, DeskAccessories, generateCoffeeCup, type CoffeeCup } from './game/Desk';
+export { TimeDisplay, ClockFace, DayProgress, formatGameTime, getTimeSpeed, type GameTime } from './game/TimeDisplay';
