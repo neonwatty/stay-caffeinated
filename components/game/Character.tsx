@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import {
   UnderCaffeinatedCharacter,
   OptimalCharacter,
@@ -6,6 +6,8 @@ import {
   CharacterState,
   getCharacterComponent,
 } from './svg/CharacterStates';
+import { animateCharacterState } from '@/utils/animations';
+import anime from '@/lib/anime';
 
 export interface CharacterProps {
   caffeineLevel: number;
@@ -37,6 +39,8 @@ export const Character: React.FC<CharacterProps> = ({
   onStateChange,
 }) => {
   const [previousState, setPreviousState] = useState<CharacterState>('optimal');
+  const characterRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<anime.AnimeInstance | null>(null);
 
   const currentState = useMemo((): CharacterState => {
     const { underCaffeinated = 30, overCaffeinated = 70 } = customThresholds;
@@ -56,8 +60,37 @@ export const Character: React.FC<CharacterProps> = ({
         onStateChange(currentState, previousState);
       }
       setPreviousState(currentState);
+
+      // Apply state-based animations
+      if (characterRef.current && animateTransitions) {
+        // Clean up previous animation
+        if (animationRef.current) {
+          animationRef.current.pause();
+        }
+
+        // Map states to animation states
+        const animationStateMap: Record<CharacterState, 'sleepy' | 'normal' | 'hyper'> = {
+          'under': 'sleepy',
+          'optimal': 'normal',
+          'over': 'hyper'
+        };
+
+        animationRef.current = animateCharacterState(
+          characterRef.current,
+          animationStateMap[currentState]
+        );
+      }
     }
-  }, [currentState, previousState, onStateChange]);
+  }, [currentState, previousState, onStateChange, animateTransitions]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.pause();
+      }
+    };
+  }, []);
 
   const CharacterComponent = getCharacterComponent(currentState);
 
@@ -95,7 +128,7 @@ export const Character: React.FC<CharacterProps> = ({
       role="img"
       aria-label={`Character is ${getStateLabel(currentState).toLowerCase()}`}
     >
-      <div className={`${transitionClass} ${currentState === 'over' ? 'animate-shake' : ''}`}>
+      <div ref={characterRef} className={transitionClass}>
         <CharacterComponent width={width} height={height} className={transitionClass} />
       </div>
 

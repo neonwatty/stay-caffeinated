@@ -1,9 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CircularProgress } from '../ui/ProgressBar';
 import { CaffeineBar, CaffeineGauge } from './CaffeineBar';
 import { HealthBar, HealthMeter } from './HealthBar';
+import { screenShake } from '@/utils/animations';
+import anime from '@/lib/anime';
 
 interface StatusBarsProps {
   caffeineLevel: number;
@@ -31,11 +33,38 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
   variant = 'default',
 }) => {
   const timeProgress = ((totalTime - timeRemaining) / totalTime) * 100;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prevHealthRef = useRef(healthLevel);
+  const prevCaffeineRef = useRef(caffeineLevel);
+
+  // Animate on critical health
+  useEffect(() => {
+    if (healthLevel < 20 && healthLevel < prevHealthRef.current && containerRef.current) {
+      // Critical health animation
+      anime({
+        targets: containerRef.current,
+        backgroundColor: ['#FEE2E2', '#FFFFFF'],
+        duration: 300,
+        easing: 'easeInOutQuad',
+        direction: 'alternate',
+        loop: 2,
+      });
+    }
+    prevHealthRef.current = healthLevel;
+  }, [healthLevel]);
+
+  // Animate on over-caffeination
+  useEffect(() => {
+    if (caffeineLevel > 85 && caffeineLevel > prevCaffeineRef.current && containerRef.current) {
+      screenShake(containerRef.current, 3);
+    }
+    prevCaffeineRef.current = caffeineLevel;
+  }, [caffeineLevel]);
 
   // Minimal compact view
   if (compact) {
     return (
-      <div className={`flex items-center gap-4 p-3 bg-gray-900 rounded-lg ${className}`}>
+      <div ref={containerRef} className={`flex items-center gap-4 p-3 bg-gray-900 rounded-lg ${className}`}>
         <CaffeineBar value={caffeineLevel} compact animated />
         <HealthBar value={healthLevel} compact animated />
 
@@ -51,7 +80,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
   // Gauge variant with circular meters
   if (variant === 'gauge') {
     return (
-      <div className={`p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
+      <div ref={containerRef} className={`p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
         <div className="grid grid-cols-2 gap-6">
           {/* Caffeine and Health Gauges */}
           <div className="space-y-4">
@@ -105,7 +134,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
 
   // Default bar variant
   return (
-    <div className={`space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
+    <div ref={containerRef} className={`space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
       {/* Caffeine Bar with optimal zone */}
       <CaffeineBar
         value={caffeineLevel}

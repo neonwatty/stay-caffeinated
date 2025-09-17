@@ -11,7 +11,7 @@ export interface DrinkItemProps {
   effects?: string[];
   isAvailable: boolean;
   remainingCooldown?: number;
-  onSelect: () => void;
+  onSelect: (event?: React.MouseEvent<HTMLElement>) => void;
   onHover?: (isHovered: boolean) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
@@ -79,10 +79,10 @@ export const DrinkItem: React.FC<DrinkItemProps> = ({
     setIsPressed(false);
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (!canSelect) return;
     e.preventDefault();
-    onSelect();
+    onSelect(e);
   };
 
   const handleMouseEnter = () => {

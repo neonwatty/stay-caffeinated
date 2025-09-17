@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GameMenu, MenuButton, MenuSection } from './GameMenu';
+import anime from '@/lib/anime';
 
 export interface StartScreenProps {
   isOpen: boolean;
@@ -73,6 +74,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     savedDifficulty || 'normal'
   );
   const [showDifficultyDetails, setShowDifficultyDetails] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (savedDifficulty) {
@@ -81,7 +83,21 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   }, [savedDifficulty]);
 
   const handleStartGame = () => {
-    onStartGame(selectedDifficulty);
+    // Animate the menu closing before starting the game
+    if (menuRef.current) {
+      anime({
+        targets: menuRef.current,
+        scale: [1, 1.1, 0],
+        opacity: [1, 0],
+        duration: 500,
+        easing: 'easeInOutQuad',
+        complete: () => {
+          onStartGame(selectedDifficulty);
+        }
+      });
+    } else {
+      onStartGame(selectedDifficulty);
+    }
   };
 
   const selectedOption = DIFFICULTY_OPTIONS.find(opt => opt.level === selectedDifficulty);

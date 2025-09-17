@@ -32,6 +32,7 @@ export function animateCaffeineBar(
 ) {
   const color = isOptimal ? '#10b981' : level > 70 ? '#f59e0b' : '#ef4444';
 
+  if (!anime) return;
   return anime({
     targets: target,
     width: `${level}%`,
@@ -45,6 +46,7 @@ export function animateCaffeineBar(
  * Health bar pulse animation when taking damage
  */
 export function animateHealthDamage(target: HTMLElement) {
+  if (!anime) return;
   return anime({
     targets: target,
     scale: [1, 0.95, 1],
@@ -58,10 +60,11 @@ export function animateHealthDamage(target: HTMLElement) {
  * Screen shake effect for over-caffeination
  */
 export function screenShake(target: HTMLElement, intensity: number = 5) {
+  if (!anime) return;
   return anime({
     targets: target,
-    translateX: anime.random(-intensity, intensity),
-    translateY: anime.random(-intensity, intensity),
+    translateX: anime?.random ? anime.random(-intensity, intensity) : Math.random() * intensity * 2 - intensity,
+    translateY: anime?.random ? anime.random(-intensity, intensity) : Math.random() * intensity * 2 - intensity,
     duration: DURATIONS.instant,
     easing: GAME_EASINGS.sharp,
     loop: 3,
@@ -92,7 +95,7 @@ export function animateCharacterState(
       easing: GAME_EASINGS.smooth,
     },
     hyper: {
-      rotate: anime.random(-5, 5),
+      rotate: anime?.random ? anime.random(-5, 5) : Math.random() * 10 - 5,
       scale: [1, 1.05],
       duration: DURATIONS.fast,
       direction: 'alternate',
@@ -101,6 +104,7 @@ export function animateCharacterState(
     },
   };
 
+  if (!anime) return;
   return anime({
     targets: target,
     ...animations[state],
@@ -114,6 +118,7 @@ export function animateDrinkConsumption(
   drinkElement: HTMLElement,
   targetElement: HTMLElement
 ) {
+  if (!anime || !anime.timeline) return;
   const timeline = anime.timeline({
     easing: GAME_EASINGS.smooth,
   });
@@ -138,6 +143,7 @@ export function animateDrinkConsumption(
  * Power-up collection animation
  */
 export function animatePowerUp(target: HTMLElement) {
+  if (!anime) return;
   return anime({
     targets: target,
     scale: [0, 1.2, 1],
@@ -151,6 +157,7 @@ export function animatePowerUp(target: HTMLElement) {
  * Game over animation
  */
 export function animateGameOver(target: HTMLElement) {
+  if (!anime || !anime.timeline) return;
   const timeline = anime.timeline({
     easing: GAME_EASINGS.sharp,
   });
@@ -163,7 +170,7 @@ export function animateGameOver(target: HTMLElement) {
     })
     .add({
       targets: target,
-      rotate: anime.random(-45, 45),
+      rotate: anime?.random ? anime.random(-45, 45) : Math.random() * 90 - 45,
       translateY: '100vh',
       duration: DURATIONS.slow,
       easing: GAME_EASINGS.overshoot,
@@ -176,12 +183,13 @@ export function animateGameOver(target: HTMLElement) {
  * Success celebration animation
  */
 export function animateSuccess(targets: NodeListOf<HTMLElement> | HTMLElement[]) {
+  if (!anime) return;
   return anime({
     targets,
     translateY: [0, -30, 0],
     scale: [1, 1.2, 1],
-    rotate: anime.stagger([0, 360]),
-    delay: anime.stagger(100),
+    rotate: anime?.stagger ? anime.stagger([0, 360]) : 180,
+    delay: anime?.stagger ? anime.stagger(100) : 100,
     duration: DURATIONS.slow,
     easing: GAME_EASINGS.bounce,
   });
@@ -207,10 +215,14 @@ export function createParticleExplosion(
     particles.push(particle);
   }
 
+  if (!anime) {
+    particles.forEach(p => p.remove());
+    return;
+  }
   const animation = anime({
     targets: particles,
-    translateX: () => anime.random(-200, 200),
-    translateY: () => anime.random(-200, 200),
+    translateX: () => anime?.random ? anime.random(-200, 200) : Math.random() * 400 - 200,
+    translateY: () => anime?.random ? anime.random(-200, 200) : Math.random() * 400 - 200,
     scale: [1, 0],
     opacity: [1, 0],
     duration: DURATIONS.slow,
@@ -231,7 +243,7 @@ export function cleanupAnimation(animation: anime.AnimeInstance | null) {
     animation.pause();
     if (animation.animatables) {
       animation.animatables.forEach(animatable => {
-        anime.remove(animatable.target);
+        anime?.remove(animatable.target);
       });
     }
   }

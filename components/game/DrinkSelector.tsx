@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DrinkItem, getDrinkDefaults } from './DrinkItem';
+import { animateDrinkConsumption, animatePowerUp } from '@/utils/animations';
+import anime from '@/lib/anime';
 
 export interface Drink {
   id: string;
@@ -108,11 +110,45 @@ export const DrinkSelector: React.FC<DrinkSelectorProps> = ({
     return isUnlocked && isNotOnCooldown && !disabled;
   };
 
-  const handleDrinkSelect = useCallback((drinkId: string) => {
+  const handleDrinkSelect = useCallback((drinkId: string, event?: React.MouseEvent<HTMLElement>) => {
     const drink = drinks.find(d => d.id === drinkId);
     if (!drink || !isDrinkAvailable(drink)) return;
 
     setSelectedDrink(drinkId);
+
+    // Animate the drink selection
+    if (event && event.currentTarget) {
+      const drinkElement = event.currentTarget;
+
+      // Create a clone for animation
+      const clone = drinkElement.cloneNode(true) as HTMLElement;
+      clone.style.position = 'fixed';
+      const rect = drinkElement.getBoundingClientRect();
+      clone.style.left = `${rect.left}px`;
+      clone.style.top = `${rect.top}px`;
+      clone.style.width = `${rect.width}px`;
+      clone.style.height = `${rect.height}px`;
+      clone.style.pointerEvents = 'none';
+      clone.style.zIndex = '9999';
+      document.body.appendChild(clone);
+
+      // Animate the clone
+      anime({
+        targets: clone,
+        scale: [1, 1.5, 0],
+        opacity: [1, 0.8, 0],
+        translateY: -50,
+        duration: 600,
+        easing: 'easeOutQuad',
+        complete: () => {
+          clone.remove();
+        }
+      });
+
+      // Pulse the original element
+      animatePowerUp(drinkElement);
+    }
+
     onSelect(drinkId);
 
     setRemainingCooldowns(prev => ({
@@ -229,7 +265,7 @@ export const DrinkSelector: React.FC<DrinkSelectorProps> = ({
             {...drink}
             isAvailable={isAvailable}
             remainingCooldown={cooldown}
-            onSelect={() => handleDrinkSelect(drink.id)}
+            onSelect={(e) => handleDrinkSelect(drink.id, e)}
             onHover={(hovered) => handleDrinkHover(hovered ? drink.id : null)}
             onDragStart={() => handleDragStart(drink.id)}
             onDragEnd={handleDragEnd}
