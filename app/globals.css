@@ -3,6 +3,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Game-specific color palette */
+  --caffeine-low: #ef4444;
+  --caffeine-optimal: #10b981;
+  --caffeine-high: #f59e0b;
+  --health-bar: #dc2626;
 }
 
 @theme inline {
