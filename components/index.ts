@@ -29,3 +29,6 @@ export {
   OverCaffeinatedCharacter,
   type CharacterState,
 } from './game/svg/CharacterStates';
+export { Workspace, WorkspaceScene } from './game/Workspace';
+export { Monitor, MonitorContent, CodeEditor } from './game/Monitor';
+export { Desk, DeskAccessories, generateCoffeeCup, type CoffeeCup } from './game/Desk';
