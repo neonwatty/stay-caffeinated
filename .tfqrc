@@ -1,0 +1,27 @@
+{
+  "database": {
+    "path": "./.tfq/tfq.db"
+  },
+  "defaults": {
+    "autoAdd": true,
+    "parallel": 4
+  },
+  "claude": {
+    "enabled": true,
+    "dangerouslySkipPermissions": true,
+    "verbose": true,
+    "outputFormat": "stream-json",
+    "maxIterations": 10,
+    "testTimeout": 900000,
+    "prompt": "First, detect the testing framework by checking for jest.config.* or vitest.config.* files and examining package.json scripts. Then run the test file at {testFilePath} using the appropriate test runner (npm run test if available, otherwise npx vitest run for Vitest or npx jest --watchAll=false for Jest). Debug any errors you encounter one at a time. After fixing errors, run the test again with the same test runner to verify that your changes have fixed any errors. Finally, run npm run lint to ensure code quality.",
+    "_comment": "The {testFilePath} placeholder will be replaced with the actual test file path when Claude is invoked",
+    "verbose": true,
+    "outputFormat": "stream-json",
+    "model": "opusplan",
+    "maxRetries": 3,
+    "retryDelay": 1000,
+    "retryBackoffMultiplier": 2,
+    "maxRetryDelay": 30000,
+    "claudePath": "/Users/jeremywatt/.claude/local/claude"
+  }
+}
