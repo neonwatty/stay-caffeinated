@@ -204,6 +204,10 @@ export function createParticleExplosion(
   y: number,
   particleCount: number = 20
 ) {
+  if (!anime) {
+    return;
+  }
+
   const particles: HTMLElement[] = [];
 
   for (let i = 0; i < particleCount; i++) {
@@ -213,11 +217,6 @@ export function createParticleExplosion(
     particle.style.top = `${y}px`;
     container.appendChild(particle);
     particles.push(particle);
-  }
-
-  if (!anime) {
-    particles.forEach(p => p.remove());
-    return;
   }
   const animation = anime({
     targets: particles,
