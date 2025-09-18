@@ -17,3 +17,6 @@ export * from './events';
 
 // Power-ups system
 export * from './powerups';
+
+// Achievements system
+export * from './achievements';
