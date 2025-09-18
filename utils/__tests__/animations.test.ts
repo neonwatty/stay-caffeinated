@@ -356,7 +356,7 @@ describe('Animation Utilities', () => {
       document.body.removeChild(container);
     });
 
-    it('should cleanup particles on animation complete', (done) => {
+    it('should cleanup particles on animation complete', async () => {
       const mockAnimation = { complete: vi.fn() };
       animeMock.mockReturnValue(mockAnimation);
 
@@ -369,10 +369,12 @@ describe('Animation Utilities', () => {
       completeCallback();
 
       // Wait for requestAnimationFrame to complete
-      requestAnimationFrame(() => {
-        expect(container.children.length).toBe(0);
-        document.body.removeChild(container);
-        done();
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          expect(container.children.length).toBe(0);
+          document.body.removeChild(container);
+          resolve();
+        });
       });
     });
 
