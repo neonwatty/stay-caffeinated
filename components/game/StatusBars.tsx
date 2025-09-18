@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CircularProgress } from '../ui/ProgressBar';
 import { CaffeineBar, CaffeineGauge } from './CaffeineBar';
 import { HealthBar, HealthMeter } from './HealthBar';
 import { screenShake } from '@/utils/animations';
 import anime from '@/lib/anime';
+import { useAnimation } from '@/hooks/useAnimation';
 
 interface StatusBarsProps {
   caffeineLevel: number;
@@ -36,30 +37,128 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const prevHealthRef = useRef(healthLevel);
   const prevCaffeineRef = useRef(caffeineLevel);
+  const [isOptimalZone, setIsOptimalZone] = useState(false);
+  const optimalIndicatorRef = useRef<HTMLDivElement>(null);
 
-  // Animate on critical health
+  // Animation configurations
+  const { targetRef: scoreRef, controls: scoreControls } = useAnimation({
+    scale: [1, 1.2, 1],
+    duration: 400,
+    easing: 'easeOutElastic(1, 0.5)',
+    autoplay: false,
+  });
+
+  const { controls: timeControls } = useAnimation({
+    rotate: 360,
+    duration: 1000,
+    easing: 'linear',
+    autoplay: false,
+  });
+
+  // Enhanced critical health animation with screen effects
   useEffect(() => {
-    if (healthLevel < 20 && healthLevel < prevHealthRef.current && containerRef.current) {
-      // Critical health animation
-      anime({
+    if (!containerRef.current) return;
+
+    // Critical health pulse and flash
+    if (healthLevel < 20 && healthLevel < prevHealthRef.current) {
+      // Container flash animation
+      const flashAnimation = anime.timeline({
         targets: containerRef.current,
-        backgroundColor: ['#FEE2E2', '#FFFFFF'],
-        duration: 300,
-        easing: 'easeInOutQuad',
-        direction: 'alternate',
-        loop: 2,
+      })
+      .add({
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        duration: 200,
+        easing: 'easeOutQuad',
+      })
+      .add({
+        backgroundColor: 'transparent',
+        duration: 400,
+        easing: 'easeInQuad',
       });
+
+      // Add border pulse for extreme critical (< 10%)
+      if (healthLevel < 10) {
+        anime({
+          targets: containerRef.current,
+          borderColor: ['rgba(239, 68, 68, 0)', 'rgba(239, 68, 68, 0.8)', 'rgba(239, 68, 68, 0)'],
+          borderWidth: ['0px', '2px', '0px'],
+          duration: 600,
+          easing: 'easeOutQuad',
+        });
+      }
+
+      return () => {
+        flashAnimation.pause();
+      };
     }
     prevHealthRef.current = healthLevel;
   }, [healthLevel]);
 
-  // Animate on over-caffeination
+  // Enhanced over-caffeination effects
   useEffect(() => {
-    if (caffeineLevel > 85 && caffeineLevel > prevCaffeineRef.current && containerRef.current) {
-      screenShake(containerRef.current, 3);
+    if (!containerRef.current) return;
+
+    // Shake effect for high caffeine
+    if (caffeineLevel > 85 && caffeineLevel > prevCaffeineRef.current) {
+      screenShake(containerRef.current, Math.min(caffeineLevel / 20, 5));
+
+      // Jitter animation for extreme over-caffeination
+      if (caffeineLevel > 95) {
+        anime({
+          targets: containerRef.current,
+          rotate: [0, -1, 1, -1, 0],
+          duration: 200,
+          easing: 'easeInOutQuad',
+          loop: 3,
+        });
+      }
     }
+
+    // Under-caffeination drowsy effect
+    if (caffeineLevel < 15 && caffeineLevel < prevCaffeineRef.current) {
+      anime({
+        targets: containerRef.current,
+        opacity: [1, 0.7, 1],
+        duration: 2000,
+        easing: 'easeInOutSine',
+      });
+    }
+
     prevCaffeineRef.current = caffeineLevel;
   }, [caffeineLevel]);
+
+  // Optimal zone celebration animation
+  useEffect(() => {
+    const inOptimalZone = caffeineLevel >= 30 && caffeineLevel <= 70 && healthLevel >= 50;
+    setIsOptimalZone(inOptimalZone);
+
+    if (inOptimalZone && !prevCaffeineRef.current) {
+      // Entering optimal zone animation
+      if (optimalIndicatorRef.current) {
+        anime({
+          targets: optimalIndicatorRef.current,
+          scale: [0.8, 1.1, 1],
+          opacity: [0, 1],
+          duration: 600,
+          easing: 'easeOutElastic(1, 0.5)',
+        });
+      }
+    }
+  }, [caffeineLevel, healthLevel]);
+
+  // Animate score changes
+  useEffect(() => {
+    if (scoreControls?.play && score > 0) {
+      scoreControls.play();
+    }
+  }, [score, scoreControls]);
+
+  // Time warning animation
+  useEffect(() => {
+    if (timeRemaining < 60 && timeRemaining % 10 === 0 && timeControls?.play) {
+      timeControls.play();
+    }
+  }, [timeRemaining, timeControls]);
 
   // Minimal compact view
   if (compact) {
@@ -68,10 +167,12 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
         <CaffeineBar value={caffeineLevel} compact animated />
         <HealthBar value={healthLevel} compact animated />
 
-        {/* Score */}
+        {/* Score with animation */}
         <div className="ml-auto flex items-center gap-2">
           <span className="text-sm text-gray-400">Score:</span>
-          <span className="text-lg font-bold text-white">{score.toLocaleString()}</span>
+          <span ref={scoreRef} className="text-lg font-bold text-white">
+            {score.toLocaleString()}
+          </span>
         </div>
       </div>
     );
@@ -119,7 +220,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
               <span className="text-sm text-gray-600 dark:text-gray-400 block mb-2">
                 Score
               </span>
-              <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+              <div ref={scoreRef} className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
                 {score.toLocaleString()}
               </div>
               <span className="text-xs text-gray-500 dark:text-gray-500 mt-1 block">
@@ -135,6 +236,13 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
   // Default bar variant
   return (
     <div ref={containerRef} className={`space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
+      {/* Optimal Zone Indicator */}
+      {isOptimalZone && (
+        <div ref={optimalIndicatorRef} className="mb-2">
+          <OptimalZoneIndicator isInZone={isOptimalZone} />
+        </div>
+      )}
+
       {/* Caffeine Bar with optimal zone */}
       <CaffeineBar
         value={caffeineLevel}
@@ -172,7 +280,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
           <span className="text-sm text-gray-600 dark:text-gray-400 block mb-2">
             Score
           </span>
-          <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+          <div ref={scoreRef} className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
             {score.toLocaleString()}
           </div>
           <span className="text-xs text-gray-500 dark:text-gray-500 mt-1 block">
@@ -194,8 +302,41 @@ export const OptimalZoneIndicator: React.FC<OptimalZoneIndicatorProps> = ({
   isInZone,
   className = '',
 }) => {
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  const prevInZoneRef = useRef(isInZone);
+
+  // Animate zone transitions
+  useEffect(() => {
+    if (!indicatorRef.current) return;
+
+    // Entering optimal zone
+    if (isInZone && !prevInZoneRef.current) {
+      anime({
+        targets: indicatorRef.current,
+        scale: [0.9, 1.05, 1],
+        backgroundColor: ['#86efac', '#10b981', '#86efac'],
+        duration: 800,
+        easing: 'easeOutElastic(1, 0.5)',
+      });
+    }
+
+    // Leaving optimal zone
+    if (!isInZone && prevInZoneRef.current) {
+      anime({
+        targets: indicatorRef.current,
+        scale: [1, 0.95, 1],
+        backgroundColor: ['#9ca3af', '#6b7280'],
+        duration: 400,
+        easing: 'easeInOutQuad',
+      });
+    }
+
+    prevInZoneRef.current = isInZone;
+  }, [isInZone]);
+
   return (
     <div
+      ref={indicatorRef}
       className={`
         flex items-center gap-2 px-3 py-2 rounded-lg transition-all
         ${isInZone
@@ -209,11 +350,15 @@ export const OptimalZoneIndicator: React.FC<OptimalZoneIndicatorProps> = ({
         className={`
           w-3 h-3 rounded-full transition-all
           ${isInZone
-            ? 'bg-green-500 animate-pulse'
+            ? 'bg-green-500'
             : 'bg-gray-400'
           }
         `}
-      />
+      >
+        {isInZone && (
+          <div className="w-full h-full rounded-full bg-green-400 animate-ping" />
+        )}
+      </div>
       <span className="text-sm font-medium">
         {isInZone ? 'Optimal Zone' : 'Outside Zone'}
       </span>

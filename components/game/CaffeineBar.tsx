@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { ProgressBar } from '../ui/ProgressBar';
+import anime from '@/lib/anime';
 
 interface CaffeineBarProps {
   value: number;
@@ -32,22 +33,95 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
   className = '',
   compact = false,
 }) => {
+  const barRef = useRef<HTMLDivElement>(null);
+  const optimalZoneRef = useRef<HTMLDivElement>(null);
+  const prevValueRef = useRef(value);
   // Determine status based on value
   const status = useMemo(() => {
     if (value < dangerLow) {
-      return { label: 'Critical Low', color: 'danger' as const, pulse: true };
+      return { label: 'Critical Low', color: 'danger' as const, pulse: true, shake: true };
     }
     if (value < optimalMin) {
-      return { label: 'Low', color: 'warning' as const, pulse: false };
+      return { label: 'Low', color: 'warning' as const, pulse: false, shake: false };
     }
     if (value > dangerHigh) {
-      return { label: 'Critical High', color: 'danger' as const, pulse: true };
+      return { label: 'Critical High', color: 'danger' as const, pulse: true, shake: true };
     }
     if (value > optimalMax) {
-      return { label: 'High', color: 'warning' as const, pulse: false };
+      return { label: 'High', color: 'warning' as const, pulse: false, shake: false };
     }
-    return { label: 'Optimal', color: 'success' as const, pulse: false };
+    return { label: 'Optimal', color: 'success' as const, pulse: false, shake: false };
   }, [value, dangerLow, optimalMin, optimalMax, dangerHigh]);
+
+  // Smooth transition animation for value changes
+  useEffect(() => {
+    if (!animated || !barRef.current) return;
+
+    // Animate the bar fill on value change
+    if (Math.abs(value - prevValueRef.current) > 1) {
+      anime({
+        targets: barRef.current.querySelector('.progress-fill'),
+        width: `${value}%`,
+        duration: 600,
+        easing: 'easeInOutQuad',
+      });
+    }
+
+    // Pulsing animation for danger zones
+    if (status.pulse && barRef.current) {
+      const pulseAnimation = anime({
+        targets: barRef.current,
+        scale: [1, 1.02, 1],
+        duration: 800,
+        easing: 'easeInOutSine',
+        loop: true,
+        direction: 'alternate',
+      });
+
+      return () => {
+        pulseAnimation.pause();
+        if (barRef.current) {
+          anime.remove(barRef.current);
+        }
+      };
+    }
+
+    // Shake animation when entering danger zone
+    if (status.shake && value !== prevValueRef.current && barRef.current) {
+      anime({
+        targets: barRef.current,
+        translateX: [0, -3, 3, -3, 0],
+        duration: 300,
+        easing: 'easeInOutQuad',
+      });
+    }
+
+    prevValueRef.current = value;
+  }, [value, status.pulse, status.shake, animated]);
+
+  // Optimal zone glow animation
+  useEffect(() => {
+    if (!showOptimalZone || !optimalZoneRef.current) return;
+
+    const isInOptimalZone = value >= optimalMin && value <= optimalMax;
+
+    if (isInOptimalZone) {
+      const glowAnimation = anime({
+        targets: optimalZoneRef.current,
+        opacity: [0.2, 0.4, 0.2],
+        duration: 2000,
+        easing: 'easeInOutSine',
+        loop: true,
+      });
+
+      return () => {
+        glowAnimation.pause();
+        if (optimalZoneRef.current) {
+          anime.remove(optimalZoneRef.current);
+        }
+      };
+    }
+  }, [value, optimalMin, optimalMax, showOptimalZone]);
 
   // Compact version for small spaces
   if (compact) {
@@ -72,7 +146,7 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
   }
 
   return (
-    <div className={`space-y-2 ${status.pulse ? 'animate-pulse' : ''} ${className}`}>
+    <div ref={barRef} className={`space-y-2 ${className}`}>
       {/* Header with label and status */}
       {showLabel && (
         <div className="flex items-center justify-between">
@@ -100,9 +174,10 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
         {/* Optimal zone indicator overlay */}
         {showOptimalZone && (
           <>
-            {/* Optimal zone background */}
+            {/* Optimal zone background with animation */}
             <div
-              className="absolute top-0 h-full bg-green-500/20 pointer-events-none"
+              ref={optimalZoneRef}
+              className="absolute top-0 h-full bg-green-500/20 pointer-events-none transition-opacity"
               style={{
                 left: `${optimalMin}%`,
                 width: `${optimalMax - optimalMin}%`,

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { ProgressBar } from '../ui/ProgressBar';
+import anime from '@/lib/anime';
 
 interface HealthBarProps {
   value: number;
@@ -28,7 +29,11 @@ export const HealthBar: React.FC<HealthBarProps> = ({
   className = '',
   compact = false,
 }) => {
-  const [heartbeatScale, setHeartbeatScale] = useState(1);
+  // Removed unused heartbeatScale state - now using anime.js directly
+  const barRef = useRef<HTMLDivElement>(null);
+  const heartRef = useRef<SVGSVGElement>(null);
+  const prevValueRef = useRef(value);
+  const warningAnimationRef = useRef<anime.AnimeInstance | null>(null);
 
   // Determine health status
   const status = useMemo(() => {
@@ -41,23 +46,90 @@ export const HealthBar: React.FC<HealthBarProps> = ({
     return { label: 'Healthy', color: 'success' as const, pulse: false };
   }, [value, criticalThreshold, warningThreshold]);
 
-  // Heartbeat animation for critical health
+  // Enhanced heartbeat animation for critical health
   useEffect(() => {
-    if (status.pulse && showHeartbeat) {
-      const interval = setInterval(() => {
-        setHeartbeatScale(prev => (prev === 1 ? 1.2 : 1));
-      }, 600);
-      return () => clearInterval(interval);
+    if (status.pulse && showHeartbeat && heartRef.current) {
+      // Use anime.js for smoother heartbeat
+      const heartbeatAnimation = anime({
+        targets: heartRef.current,
+        scale: [1, 1.3, 1],
+        duration: 600,
+        easing: 'easeInOutQuad',
+        loop: true,
+      });
+
+      return () => {
+        heartbeatAnimation.pause();
+        if (heartRef.current) {
+          anime.remove(heartRef.current);
+        }
+      };
     }
   }, [status.pulse, showHeartbeat]);
+
+  // Warning flash animation when health drops
+  useEffect(() => {
+    if (!animated || !barRef.current) return;
+
+    const healthDrop = prevValueRef.current - value;
+
+    // Flash red when taking damage
+    if (healthDrop > 5) {
+      if (warningAnimationRef.current) {
+        warningAnimationRef.current.pause();
+      }
+
+      warningAnimationRef.current = anime({
+        targets: barRef.current,
+        backgroundColor: [
+          { value: 'rgba(239, 68, 68, 0.2)', duration: 100 },
+          { value: 'transparent', duration: 400 }
+        ],
+        easing: 'easeOutQuad',
+        complete: () => {
+          warningAnimationRef.current = null;
+        }
+      });
+    }
+
+    // Critical health warning animation
+    if (value <= criticalThreshold && value < prevValueRef.current) {
+      const criticalAnimation = anime({
+        targets: barRef.current,
+        translateX: [0, -2, 2, -2, 2, 0],
+        duration: 400,
+        easing: 'easeInOutQuad',
+      });
+
+      // Screen edge glow for critical health
+      if (value < 10) {
+        anime({
+          targets: barRef.current,
+          boxShadow: [
+            { value: '0 0 20px rgba(239, 68, 68, 0.5)', duration: 200 },
+            { value: '0 0 40px rgba(239, 68, 68, 0.8)', duration: 200 },
+            { value: '0 0 20px rgba(239, 68, 68, 0.5)', duration: 200 },
+            { value: 'none', duration: 200 }
+          ],
+          easing: 'easeInOutQuad',
+        });
+      }
+
+      return () => {
+        criticalAnimation.pause();
+      };
+    }
+
+    prevValueRef.current = value;
+  }, [value, criticalThreshold, animated]);
 
   // Compact version
   if (compact) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <HeartIcon
-          className={`w-4 h-4 text-red-600 flex-shrink-0 transition-transform duration-200`}
-          style={{ transform: `scale(${heartbeatScale})` }}
+          ref={heartRef}
+          className={`w-4 h-4 text-red-600 flex-shrink-0`}
         />
         <div className="flex-1 min-w-0">
           <ProgressBar
@@ -77,14 +149,14 @@ export const HealthBar: React.FC<HealthBarProps> = ({
   }
 
   return (
-    <div className={`space-y-2 ${status.pulse ? 'animate-pulse' : ''} ${className}`}>
+    <div ref={barRef} className={`space-y-2 relative ${className}`}>
       {/* Header with label and status */}
       {showLabel && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HeartIcon
-              className={`w-5 h-5 text-red-600 transition-transform duration-200`}
-              style={{ transform: `scale(${heartbeatScale})` }}
+              ref={heartRef}
+              className={`w-5 h-5 text-red-600`}
             />
             <span className="font-medium text-gray-700 dark:text-gray-300">
               Health
@@ -128,11 +200,12 @@ export const HealthBar: React.FC<HealthBarProps> = ({
 };
 
 // Heart icon component
-const HeartIcon: React.FC<{ className?: string; style?: React.CSSProperties }> = ({
-  className = '',
-  style
-}) => (
+const HeartIcon = React.forwardRef<
+  SVGSVGElement,
+  { className?: string; style?: React.CSSProperties }
+>(({ className = '', style }, ref) => (
   <svg
+    ref={ref}
     className={className}
     style={style}
     fill="currentColor"
@@ -146,7 +219,9 @@ const HeartIcon: React.FC<{ className?: string; style?: React.CSSProperties }> =
       clipRule="evenodd"
     />
   </svg>
-);
+));
+
+HeartIcon.displayName = 'HeartIcon';
 
 // Health badge component
 interface HealthBadgeProps {
