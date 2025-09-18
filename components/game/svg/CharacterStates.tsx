@@ -22,12 +22,35 @@ export const UnderCaffeinatedCharacter: React.FC<CharacterStateProps> = ({
     <g id="under-caffeinated">
       <circle cx="100" cy="100" r="50" fill="#E8D5C4" stroke="#8B7355" strokeWidth="2" />
 
-      <circle cx="85" cy="90" r="8" fill="#2C3E50" />
-      <circle cx="85" cy="92" r="3" fill="#95A5A6" />
+      {/* Left eye with droopy eyelid */}
+      <g className="left-eye">
+        <circle cx="85" cy="90" r="8" fill="#2C3E50" />
+        <circle cx="85" cy="92" r="3" fill="#95A5A6" />
+        {/* Droopy eyelid */}
+        <path
+          d="M 77 88 Q 85 94, 93 88"
+          fill="#E8D5C4"
+          stroke="#8B7355"
+          strokeWidth="1"
+          className="eyelid-droopy"
+        />
+      </g>
 
-      <circle cx="115" cy="90" r="8" fill="#2C3E50" />
-      <circle cx="115" cy="92" r="3" fill="#95A5A6" />
+      {/* Right eye with droopy eyelid */}
+      <g className="right-eye">
+        <circle cx="115" cy="90" r="8" fill="#2C3E50" />
+        <circle cx="115" cy="92" r="3" fill="#95A5A6" />
+        {/* Droopy eyelid */}
+        <path
+          d="M 107 88 Q 115 94, 123 88"
+          fill="#E8D5C4"
+          stroke="#8B7355"
+          strokeWidth="1"
+          className="eyelid-droopy"
+        />
+      </g>
 
+      {/* Tired eyebrows */}
       <path d="M 87 85 Q 85 82, 83 85" stroke="#8B7355" strokeWidth="2" fill="none" />
       <path d="M 117 85 Q 115 82, 113 85" stroke="#8B7355" strokeWidth="2" fill="none" />
 
@@ -39,10 +62,11 @@ export const UnderCaffeinatedCharacter: React.FC<CharacterStateProps> = ({
         strokeLinecap="round"
       />
 
-      <g className="zzz" opacity="0.7">
-        <text x="140" y="70" fontSize="16" fill="#95A5A6" fontFamily="Arial">Z</text>
-        <text x="150" y="60" fontSize="14" fill="#95A5A6" fontFamily="Arial">z</text>
-        <text x="158" y="50" fontSize="12" fill="#95A5A6" fontFamily="Arial">z</text>
+      {/* Animated Zzz */}
+      <g className="zzz">
+        <text x="140" y="70" fontSize="16" fill="#95A5A6" fontFamily="Arial" className="zzz-1">Z</text>
+        <text x="150" y="60" fontSize="14" fill="#95A5A6" fontFamily="Arial" className="zzz-2">z</text>
+        <text x="158" y="50" fontSize="12" fill="#95A5A6" fontFamily="Arial" className="zzz-3">z</text>
       </g>
 
       <g className="sweat-drops">
@@ -69,13 +93,19 @@ export const OptimalCharacter: React.FC<CharacterStateProps> = ({
     <g id="optimal">
       <circle cx="100" cy="100" r="50" fill="#FFE5CC" stroke="#D4A373" strokeWidth="2" />
 
-      <circle cx="85" cy="90" r="8" fill="#2C3E50" />
-      <circle cx="85" cy="89" r="4" fill="#34495E" />
-      <circle cx="86" cy="88" r="2" fill="#FFFFFF" />
+      {/* Left eye - bright and alert */}
+      <g className="left-eye">
+        <circle cx="85" cy="90" r="8" fill="#2C3E50" className="eye-main" />
+        <circle cx="85" cy="89" r="4" fill="#34495E" className="pupil" />
+        <circle cx="86" cy="88" r="2" fill="#FFFFFF" className="eye-highlight" />
+      </g>
 
-      <circle cx="115" cy="90" r="8" fill="#2C3E50" />
-      <circle cx="115" cy="89" r="4" fill="#34495E" />
-      <circle cx="116" cy="88" r="2" fill="#FFFFFF" />
+      {/* Right eye - bright and alert */}
+      <g className="right-eye">
+        <circle cx="115" cy="90" r="8" fill="#2C3E50" className="eye-main" />
+        <circle cx="115" cy="89" r="4" fill="#34495E" className="pupil" />
+        <circle cx="116" cy="88" r="2" fill="#FFFFFF" className="eye-highlight" />
+      </g>
 
       <path d="M 87 82 Q 85 80, 83 82" stroke="#D4A373" strokeWidth="2" fill="none" />
       <path d="M 117 82 Q 115 80, 113 82" stroke="#D4A373" strokeWidth="2" fill="none" />
@@ -88,11 +118,12 @@ export const OptimalCharacter: React.FC<CharacterStateProps> = ({
         strokeLinecap="round"
       />
 
+      {/* Animated sparkles */}
       <g className="sparkles">
-        <path d="M 60 70 L 65 75 L 60 80 L 55 75 Z" fill="#FFD700" opacity="0.8" />
-        <path d="M 140 70 L 145 75 L 140 80 L 135 75 Z" fill="#FFD700" opacity="0.8" />
-        <path d="M 70 120 L 73 123 L 70 126 L 67 123 Z" fill="#FFD700" opacity="0.6" />
-        <path d="M 130 120 L 133 123 L 130 126 L 127 123 Z" fill="#FFD700" opacity="0.6" />
+        <path d="M 60 70 L 65 75 L 60 80 L 55 75 Z" fill="#FFD700" className="sparkle-1" />
+        <path d="M 140 70 L 145 75 L 140 80 L 135 75 Z" fill="#FFD700" className="sparkle-2" />
+        <path d="M 70 120 L 73 123 L 70 126 L 67 123 Z" fill="#FFD700" className="sparkle-3" />
+        <path d="M 130 120 L 133 123 L 130 126 L 127 123 Z" fill="#FFD700" className="sparkle-4" />
       </g>
 
       <circle cx="72" cy="105" r="8" fill="#FFB6C1" opacity="0.4" />
@@ -117,27 +148,34 @@ export const OverCaffeinatedCharacter: React.FC<CharacterStateProps> = ({
     <g id="over-caffeinated">
       <circle cx="100" cy="100" r="50" fill="#FFDAB9" stroke="#CD853F" strokeWidth="2" />
 
-      <circle cx="85" cy="90" r="10" fill="#FFFFFF" stroke="#2C3E50" strokeWidth="2" />
-      <circle cx="85" cy="90" r="6" fill="#2C3E50" />
-      <circle cx="83" cy="88" r="2" fill="#FFFFFF" />
+      {/* Left eye - wide and twitchy */}
+      <g className="left-eye-wide">
+        <circle cx="85" cy="90" r="10" fill="#FFFFFF" stroke="#2C3E50" strokeWidth="2" className="eye-white" />
+        <circle cx="85" cy="90" r="6" fill="#2C3E50" className="pupil-dilated" />
+        <circle cx="83" cy="88" r="2" fill="#FFFFFF" className="eye-twitch" />
+      </g>
 
-      <circle cx="115" cy="90" r="10" fill="#FFFFFF" stroke="#2C3E50" strokeWidth="2" />
-      <circle cx="115" cy="90" r="6" fill="#2C3E50" />
-      <circle cx="113" cy="88" r="2" fill="#FFFFFF" />
+      {/* Right eye - wide and twitchy */}
+      <g className="right-eye-wide">
+        <circle cx="115" cy="90" r="10" fill="#FFFFFF" stroke="#2C3E50" strokeWidth="2" className="eye-white" />
+        <circle cx="115" cy="90" r="6" fill="#2C3E50" className="pupil-dilated" />
+        <circle cx="113" cy="88" r="2" fill="#FFFFFF" className="eye-twitch" />
+      </g>
 
       <path d="M 87 78 L 83 82" stroke="#CD853F" strokeWidth="2" fill="none" />
       <path d="M 113 78 L 117 82" stroke="#CD853F" strokeWidth="2" fill="none" />
 
       <ellipse cx="100" cy="115" rx="15" ry="8" fill="#2C3E50" opacity="0.3" />
 
+      {/* Animated shake lines */}
       <g className="shake-lines">
-        <path d="M 55 85 L 50 85" stroke="#FF6347" strokeWidth="2" opacity="0.7" />
-        <path d="M 55 95 L 48 95" stroke="#FF6347" strokeWidth="2" opacity="0.7" />
-        <path d="M 55 105 L 50 105" stroke="#FF6347" strokeWidth="2" opacity="0.7" />
+        <path d="M 55 85 L 50 85" stroke="#FF6347" strokeWidth="2" className="shake-line-1" />
+        <path d="M 55 95 L 48 95" stroke="#FF6347" strokeWidth="2" className="shake-line-2" />
+        <path d="M 55 105 L 50 105" stroke="#FF6347" strokeWidth="2" className="shake-line-3" />
 
-        <path d="M 145 85 L 150 85" stroke="#FF6347" strokeWidth="2" opacity="0.7" />
-        <path d="M 145 95 L 152 95" stroke="#FF6347" strokeWidth="2" opacity="0.7" />
-        <path d="M 145 105 L 150 105" stroke="#FF6347" strokeWidth="2" opacity="0.7" />
+        <path d="M 145 85 L 150 85" stroke="#FF6347" strokeWidth="2" className="shake-line-4" />
+        <path d="M 145 95 L 152 95" stroke="#FF6347" strokeWidth="2" className="shake-line-5" />
+        <path d="M 145 105 L 150 105" stroke="#FF6347" strokeWidth="2" className="shake-line-6" />
       </g>
 
       <g className="lightning-bolts">
