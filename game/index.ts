@@ -14,3 +14,6 @@ export * from './mechanics/scoringSystem';
 
 // Events system
 export * from './events';
+
+// Power-ups system
+export * from './powerups';
