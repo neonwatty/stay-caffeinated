@@ -20,3 +20,6 @@ export * from './powerups';
 
 // Achievements system
 export * from './achievements';
+
+// Scoring system
+export * from './scoring';
