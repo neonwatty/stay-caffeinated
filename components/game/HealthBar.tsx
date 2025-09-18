@@ -126,7 +126,11 @@ export const HealthBar: React.FC<HealthBarProps> = ({
   // Compact version
   if (compact) {
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
+      <div
+        className={`flex items-center gap-2 ${className}`}
+        role="region"
+        aria-label="Health status"
+      >
         <HeartIcon
           ref={heartRef}
           className={`w-4 h-4 text-red-600 flex-shrink-0`}

@@ -130,6 +130,8 @@ export const MenuButton: React.FC<MenuButtonProps> = ({
         ${disabled ? 'cursor-not-allowed opacity-50' : 'transform hover:scale-105'}
         ${className}
       `}
+      aria-disabled={disabled}
+      type="button"
     >
       {children}
     </button>

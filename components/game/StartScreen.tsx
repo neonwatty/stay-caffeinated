@@ -107,6 +107,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       isOpen={isOpen}
       title="Stay Caffeinated"
       showCloseButton={false}
+      role="dialog"
+      aria-labelledby="game-title"
+      aria-describedby="game-description"
       className={className}
     >
       <div className="space-y-6">

@@ -146,17 +146,31 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
   }
 
   return (
-    <div ref={barRef} className={`space-y-2 ${className}`}>
+    <div
+      ref={barRef}
+      className={`space-y-2 ${className}`}
+      role="region"
+      aria-label="Caffeine level indicator"
+    >
       {/* Header with label and status */}
       {showLabel && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CaffeineIcon className="w-5 h-5 text-amber-600" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">
+            <CaffeineIcon className="w-5 h-5 text-amber-600" aria-hidden="true" />
+            <span
+              className="font-medium text-gray-700 dark:text-gray-300"
+              id="caffeine-label"
+            >
               Caffeine Level
             </span>
           </div>
-          <StatusBadge status={status.label} color={status.color} />
+          <StatusBadge
+            status={status.label}
+            color={status.color}
+            role="status"
+            aria-live="polite"
+            aria-label={`Status: ${status.label}`}
+          />
         </div>
       )}
 
@@ -169,6 +183,11 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
           color={status.color}
           animated={animated}
           striped={status.pulse}
+          aria-labelledby="caffeine-label"
+          aria-valuenow={value}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={`${value}% caffeine level, ${status.label}`}
         />
 
         {/* Optimal zone indicator overlay */}
