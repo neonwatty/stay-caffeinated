@@ -11,3 +11,6 @@ export * from './core/gameLoop';
 export * from './mechanics/drinks';
 export * from './mechanics/caffeineSystem';
 export * from './mechanics/scoringSystem';
+
+// Events system
+export * from './events';
