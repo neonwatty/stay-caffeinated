@@ -286,7 +286,7 @@ export const DrinkSelector: React.FC<DrinkSelectorProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative ${className}`}
+      className={`relative drink-selector ${className}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

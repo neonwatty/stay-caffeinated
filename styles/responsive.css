@@ -1,0 +1,241 @@
+/**
+ * Responsive Design Styles for Stay Caffeinated
+ * Mobile-first approach with touch-friendly controls
+ */
+
+/* Base mobile styles (applies to all screen sizes) */
+.game-container {
+  @apply w-full min-h-screen px-4 py-4;
+}
+
+.game-workspace {
+  @apply flex flex-col gap-4;
+}
+
+.game-monitor {
+  @apply w-full h-64 sm:h-80 md:h-96;
+}
+
+.drink-selector {
+  @apply flex overflow-x-auto gap-2 pb-2;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drink-item {
+  @apply flex-shrink-0 w-24 sm:w-32 touch-manipulation;
+}
+
+.status-bars {
+  @apply flex flex-col gap-3 w-full;
+}
+
+.game-controls {
+  @apply grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4;
+}
+
+.game-button {
+  @apply px-3 py-2 text-sm sm:text-base touch-manipulation;
+  min-height: 44px; /* iOS touch target */
+}
+
+/* Tablet styles (768px and up) */
+@media (min-width: 768px) {
+  .game-container {
+    @apply px-6 py-6;
+  }
+
+  .game-workspace {
+    @apply grid grid-cols-2 gap-6;
+  }
+
+  .game-monitor {
+    @apply col-span-2;
+  }
+
+  .status-bars {
+    @apply flex-row justify-between;
+  }
+
+  .drink-selector {
+    @apply justify-center overflow-x-visible;
+  }
+}
+
+/* Desktop styles (1024px and up) */
+@media (min-width: 1024px) {
+  .game-container {
+    @apply max-w-7xl mx-auto px-8 py-8;
+  }
+
+  .game-workspace {
+    @apply grid-cols-3 gap-8;
+  }
+
+  .game-sidebar {
+    @apply sticky top-8;
+    max-height: calc(100vh - 4rem);
+  }
+
+  .game-controls {
+    @apply flex flex-wrap gap-3;
+  }
+}
+
+/* Touch-specific styles */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets on touch devices */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    @apply relative;
+  }
+
+  .touch-target::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    bottom: -8px;
+    left: -8px;
+  }
+
+  /* Disable hover effects on touch */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+
+  /* Add active states for touch feedback */
+  .touch-feedback {
+    @apply transition-transform active:scale-95;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-container {
+    @apply py-2;
+  }
+
+  .game-monitor {
+    @apply h-48;
+  }
+
+  .status-bars {
+    @apply flex-row;
+  }
+
+  .game-workspace {
+    @apply grid grid-cols-2;
+  }
+}
+
+/* Hide scrollbars on mobile while keeping scroll functionality */
+@media (max-width: 768px) {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Responsive text sizing */
+.responsive-text-xs {
+  @apply text-xs sm:text-sm;
+}
+
+.responsive-text-sm {
+  @apply text-sm sm:text-base;
+}
+
+.responsive-text-base {
+  @apply text-base sm:text-lg;
+}
+
+.responsive-text-lg {
+  @apply text-lg sm:text-xl md:text-2xl;
+}
+
+.responsive-text-xl {
+  @apply text-xl sm:text-2xl md:text-3xl;
+}
+
+/* Responsive spacing */
+.responsive-padding {
+  @apply p-2 sm:p-3 md:p-4 lg:p-6;
+}
+
+.responsive-margin {
+  @apply m-2 sm:m-3 md:m-4 lg:m-6;
+}
+
+/* Modal and overlay responsiveness */
+.modal-container {
+  @apply fixed inset-4 sm:inset-8 md:inset-auto md:top-1/2 md:left-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2;
+  @apply w-auto max-w-lg mx-auto;
+}
+
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/50;
+}
+
+/* Responsive grid layouts */
+.responsive-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+}
+
+/* Safe area insets for mobile devices with notches */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-area-padding {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* Reduce animations on low-end devices */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Responsive utility classes */
+.mobile-only {
+  @apply block sm:hidden;
+}
+
+.tablet-only {
+  @apply hidden sm:block lg:hidden;
+}
+
+.desktop-only {
+  @apply hidden lg:block;
+}
+
+.mobile-hidden {
+  @apply hidden sm:block;
+}
+
+.tablet-hidden {
+  @apply block sm:hidden lg:block;
+}
+
+.desktop-hidden {
+  @apply block lg:hidden;
+}

@@ -26,14 +26,14 @@ function GameTestContent() {
   } = useGameState();
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Game Engine Test</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 lg:mb-8">Game Engine Test</h1>
 
         {/* Game State Info */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Game State</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Game State</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <p className="text-gray-400">State:</p>
               <p className="text-xl">{currentState}</p>

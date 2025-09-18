@@ -114,20 +114,21 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
   return (
     <div
-      className={`relative ${layoutStyles.container} ${className}`}
+      className={`relative game-workspace ${layoutStyles.container} ${className}`}
       role="region"
       aria-label="Workspace environment"
     >
-      <div className="relative">
+      <div className="relative w-full">
         <Monitor
           caffeineLevel={caffeineLevel}
           content={monitorContentElement}
           width={layoutStyles.monitor.width}
           height={layoutStyles.monitor.height}
+          className="game-monitor"
         />
 
         {showCharacter && layout === 'default' && (
-          <div className="absolute -right-20 top-1/2 -translate-y-1/2">
+          <div className="absolute -right-20 top-1/2 -translate-y-1/2 hidden lg:block">
             <Character
               caffeineLevel={caffeineLevel}
               width={layoutStyles.character.width}
@@ -146,15 +147,18 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         showNotepad={caffeineLevel > 50}
         width={layoutStyles.desk.width}
         height={layoutStyles.desk.height}
+        className="w-full"
       />
 
       {showCharacter && layout !== 'default' && (
-        <Character
-          caffeineLevel={caffeineLevel}
-          width={layoutStyles.character.width}
-          height={layoutStyles.character.height}
-          animateTransitions={true}
-        />
+        <div className="w-full flex justify-center mt-4 lg:mt-0">
+          <Character
+            caffeineLevel={caffeineLevel}
+            width={layoutStyles.character.width}
+            height={layoutStyles.character.height}
+            animateTransitions={true}
+          />
+        </div>
       )}
 
       {showAccessories && (

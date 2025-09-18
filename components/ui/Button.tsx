@@ -115,7 +115,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={disabled || loading}
         onClick={onClick}
-        className={combinedClassName}
+        className={`${combinedClassName} touch-target touch-feedback`}
         aria-busy={loading}
         aria-disabled={disabled || loading}
         {...props}
