@@ -356,7 +356,7 @@ describe('Animation Utilities', () => {
       document.body.removeChild(container);
     });
 
-    it('should cleanup particles on animation complete', () => {
+    it('should cleanup particles on animation complete', (done) => {
       const mockAnimation = { complete: vi.fn() };
       animeMock.mockReturnValue(mockAnimation);
 
@@ -368,9 +368,12 @@ describe('Animation Utilities', () => {
       const completeCallback = animeMock.mock.calls[0][0].complete;
       completeCallback();
 
-      expect(container.children.length).toBe(0);
-
-      document.body.removeChild(container);
+      // Wait for requestAnimationFrame to complete
+      requestAnimationFrame(() => {
+        expect(container.children.length).toBe(0);
+        document.body.removeChild(container);
+        done();
+      });
     });
 
   });

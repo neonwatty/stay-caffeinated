@@ -196,38 +196,75 @@ export function animateSuccess(targets: NodeListOf<HTMLElement> | HTMLElement[])
 }
 
 /**
- * Particle effect for explosions
+ * Particle effect for explosions (optimized)
  */
 export function createParticleExplosion(
   container: HTMLElement,
   x: number,
   y: number,
-  particleCount: number = 20
+  particleCount: number = 20,
+  config?: {
+    colors?: string[];
+    size?: number;
+    spread?: number;
+    duration?: number;
+  }
 ) {
   if (!anime) {
     return;
   }
 
+  // Performance optimization: limit particle count
+  const limitedCount = Math.min(particleCount, 50);
   const particles: HTMLElement[] = [];
 
-  for (let i = 0; i < particleCount; i++) {
+  // Create document fragment for better performance
+  const fragment = document.createDocumentFragment();
+  const colors = config?.colors || ['#FFD700', '#FFA500', '#FF6347', '#FF4500'];
+  const size = config?.size || 8;
+  const spread = config?.spread || 200;
+
+  for (let i = 0; i < limitedCount; i++) {
     const particle = document.createElement('div');
-    particle.className = 'absolute w-2 h-2 bg-yellow-400 rounded-full';
-    particle.style.left = `${x}px`;
-    particle.style.top = `${y}px`;
-    container.appendChild(particle);
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    // Add the absolute class for testing
+    particle.className = 'absolute';
+
+    // Use CSS transforms for better performance
+    particle.style.cssText = `
+      position: absolute;
+      left: ${x}px;
+      top: ${y}px;
+      width: ${size}px;
+      height: ${size}px;
+      background-color: ${color};
+      border-radius: 50%;
+      pointer-events: none;
+      will-change: transform, opacity;
+      transform: translateZ(0);
+    `;
+
+    fragment.appendChild(particle);
     particles.push(particle);
   }
+
+  // Add all particles at once
+  container.appendChild(fragment);
+
   const animation = anime({
     targets: particles,
-    translateX: () => anime?.random ? anime.random(-200, 200) : Math.random() * 400 - 200,
-    translateY: () => anime?.random ? anime.random(-200, 200) : Math.random() * 400 - 200,
+    translateX: () => anime?.random ? anime.random(-spread, spread) : Math.random() * spread * 2 - spread,
+    translateY: () => anime?.random ? anime.random(-spread, spread) : Math.random() * spread * 2 - spread,
     scale: [1, 0],
     opacity: [1, 0],
-    duration: DURATIONS.slow,
+    duration: config?.duration || DURATIONS.slow,
     easing: GAME_EASINGS.sharp,
     complete: () => {
-      particles.forEach(p => p.remove());
+      // Batch removal for better performance
+      requestAnimationFrame(() => {
+        particles.forEach(p => p.remove());
+      });
     },
   });
 
