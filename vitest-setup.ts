@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import React from 'react';
+
+// Make React available globally for tests
+global.React = React;
 
 // Set NODE_ENV to test for anime.js wrapper
 process.env.NODE_ENV = 'test';
