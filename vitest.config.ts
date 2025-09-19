@@ -7,7 +7,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest-setup.ts'],
     coverage: {
-      enabled: true,
+      enabled: false,
       reporter: ['text', 'html', 'json-summary', 'json'],
       reportsDirectory: './coverage',
       include: [

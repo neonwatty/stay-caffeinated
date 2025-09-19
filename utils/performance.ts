@@ -2,7 +2,8 @@
  * Performance monitoring and optimization utilities
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
 
 /**
  * Frame rate (FPS) monitor
@@ -20,12 +21,14 @@ export class FPSMonitor {
     this.isMonitoring = true;
     this.lastTime = performance.now();
     this.frameCount = 0;
-    this.monitor();
+    if (typeof requestAnimationFrame !== 'undefined') {
+      this.monitor();
+    }
   }
 
   stop() {
     this.isMonitoring = false;
-    if (this.animationId !== null) {
+    if (this.animationId !== null && typeof cancelAnimationFrame !== 'undefined') {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
@@ -45,7 +48,9 @@ export class FPSMonitor {
       this.notifyCallbacks();
     }
 
-    this.animationId = requestAnimationFrame(this.monitor);
+    if (typeof requestAnimationFrame !== 'undefined') {
+      this.animationId = requestAnimationFrame(this.monitor);
+    }
   };
 
   private notifyCallbacks() {
@@ -59,6 +64,24 @@ export class FPSMonitor {
 
   getCurrentFPS() {
     return this.fps;
+  }
+
+  getAverageFPS() {
+    return this.fps;
+  }
+
+  frame() {
+    this.frameCount++;
+  }
+
+  onFPSDrop(threshold: number, callback: () => void) {
+    const checkFPS = (fps: number) => {
+      if (fps < threshold) {
+        callback();
+      }
+    };
+    this.callbacks.add(checkFPS);
+    return () => this.callbacks.delete(checkFPS);
   }
 }
 
@@ -89,7 +112,7 @@ export class MemoryMonitor {
 
   private checkMemory() {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
       const info: MemoryInfo = {
         usedJSHeapSize: memory.usedJSHeapSize,
         totalJSHeapSize: memory.totalJSHeapSize,
@@ -108,6 +131,39 @@ export class MemoryMonitor {
     this.callbacks.add(callback);
     return () => this.callbacks.delete(callback);
   }
+
+  getCurrentUsage(): MemoryInfo {
+    if ('memory' in performance) {
+      const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+      return {
+        usedJSHeapSize: memory.usedJSHeapSize,
+        totalJSHeapSize: memory.totalJSHeapSize,
+        jsHeapSizeLimit: memory.jsHeapSizeLimit,
+        percentUsed: (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100,
+        heapUsed: memory.usedJSHeapSize,
+        heapTotal: memory.totalJSHeapSize
+      };
+    }
+    return {
+      usedJSHeapSize: 0,
+      totalJSHeapSize: 0,
+      jsHeapSizeLimit: 0,
+      percentUsed: 0,
+      heapUsed: 0,
+      heapTotal: 0
+    };
+  }
+
+  onMemoryLeak(threshold: number, callback: () => void) {
+    const initialUsage = this.getCurrentUsage();
+    const checkLeak = (memory: MemoryInfo) => {
+      if (memory.heapUsed - initialUsage.heapUsed > threshold) {
+        callback();
+      }
+    };
+    this.callbacks.add(checkLeak);
+    return () => this.callbacks.delete(checkLeak);
+  }
 }
 
 interface MemoryInfo {
@@ -115,6 +171,8 @@ interface MemoryInfo {
   totalJSHeapSize: number;
   jsHeapSizeLimit: number;
   percentUsed: number;
+  heapUsed: number;
+  heapTotal: number;
 }
 
 /**
@@ -127,13 +185,13 @@ export class LongTaskObserver {
   start() {
     if (this.observer) return;
 
-    if ('PerformanceObserver' in window) {
+    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
       try {
         this.observer = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           this.notifyCallbacks(entries);
         });
-        
+
         this.observer.observe({ entryTypes: ['longtask'] });
       } catch (error) {
         console.warn('Long task observer not supported:', error);
@@ -234,7 +292,7 @@ export function usePerformanceWarnings() {
 /**
  * Debounce function for performance
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -254,7 +312,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function for performance
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -278,13 +336,13 @@ export function requestIdleCallbackShim(
   callback: IdleRequestCallback,
   options?: IdleRequestOptions
 ): number {
-  if ('requestIdleCallback' in window) {
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
     return window.requestIdleCallback(callback, options);
   }
   
   // Fallback to setTimeout
   const start = Date.now();
-  return window.setTimeout(() => {
+  return setTimeout(() => {
     callback({
       didTimeout: false,
       timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
@@ -296,7 +354,7 @@ export function requestIdleCallbackShim(
  * Cancel idle callback with fallback
  */
 export function cancelIdleCallbackShim(id: number): void {
-  if ('cancelIdleCallback' in window) {
+  if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
     window.cancelIdleCallback(id);
   } else {
     clearTimeout(id);
@@ -307,10 +365,10 @@ export function cancelIdleCallbackShim(id: number): void {
  * Measure component render time
  */
 export function measureRenderTime(componentName: string) {
-  return function decorator<T extends React.ComponentType<any>>(
+  return function decorator<T extends React.ComponentType<unknown>>(
     Component: T
   ): T {
-    const MeasuredComponent = (props: any) => {
+    const MeasuredComponent = (props: unknown) => {
       const renderStartRef = useRef(performance.now());
 
       useEffect(() => {
@@ -330,9 +388,116 @@ export function measureRenderTime(componentName: string) {
 }
 
 /**
+ * Performance Monitor - Main class for performance tracking
+ */
+export class PerformanceMonitor {
+  private fpsMonitor: FPSMonitor;
+  private memoryMonitor: MemoryMonitor;
+  private longTaskObserver: LongTaskObserver;
+  private frameCount = 0;
+  private frameTimings: number[] = [];
+  private lastFrameTime = 0;
+  private isMonitoring = false;
+  private longTaskCount = 0;
+
+  constructor() {
+    this.fpsMonitor = new FPSMonitor();
+    this.memoryMonitor = new MemoryMonitor();
+    this.longTaskObserver = new LongTaskObserver();
+
+    // Subscribe to long tasks
+    this.longTaskObserver.onLongTask(() => {
+      this.longTaskCount++;
+    });
+  }
+
+  start() {
+    if (this.isMonitoring) return;
+    this.isMonitoring = true;
+    this.frameCount = 0;
+    this.frameTimings = [];
+    this.lastFrameTime = performance.now();
+    this.longTaskCount = 0;
+
+    this.fpsMonitor.start();
+    this.memoryMonitor.start();
+    this.longTaskObserver.start();
+  }
+
+  stop() {
+    this.isMonitoring = false;
+    this.fpsMonitor.stop();
+    this.memoryMonitor.stop();
+    this.longTaskObserver.stop();
+  }
+
+  recordFrame() {
+    if (!this.isMonitoring) return;
+
+    const currentTime = performance.now();
+    const frameTime = currentTime - this.lastFrameTime;
+    this.frameTimings.push(frameTime);
+    this.frameCount++;
+    this.lastFrameTime = currentTime;
+
+    // Keep only last 100 frame timings
+    if (this.frameTimings.length > 100) {
+      this.frameTimings.shift();
+    }
+  }
+
+  frame() {
+    this.fpsMonitor.frame();
+  }
+
+  getAverageFPS() {
+    return this.fpsMonitor.getAverageFPS();
+  }
+
+  getCurrentUsage() {
+    return this.memoryMonitor.getCurrentUsage();
+  }
+
+  onFPSDrop(threshold: number, callback: () => void) {
+    return this.fpsMonitor.onFPSDrop(threshold, callback);
+  }
+
+  onMemoryLeak(threshold: number, callback: () => void) {
+    return this.memoryMonitor.onMemoryLeak(threshold, callback);
+  }
+
+  getMetrics() {
+    const avgFrameTime = this.frameTimings.length > 0
+      ? this.frameTimings.reduce((a, b) => a + b, 0) / this.frameTimings.length
+      : 16.67;
+
+    const currentFPS = this.frameTimings.length > 0
+      ? 1000 / avgFrameTime
+      : 60;
+
+    const memoryInfo = this.getCurrentUsage();
+
+    return {
+      fps: {
+        current: currentFPS,
+        average: this.frameTimings.length > 0 ? 1000 / avgFrameTime : 60,
+        min: this.frameTimings.length > 0 ? 1000 / Math.max(...this.frameTimings) : 60,
+        max: this.frameTimings.length > 0 ? 1000 / Math.min(...this.frameTimings) : 60
+      },
+      memory: memoryInfo,
+      longTasks: {
+        count: this.longTaskCount,
+        total: this.longTaskCount
+      },
+      frameCount: this.frameCount
+    };
+  }
+}
+
+/**
  * Lazy load with retry logic
  */
-export function lazyWithRetry<T extends React.ComponentType<any>>(
+export function lazyWithRetry<T extends React.ComponentType<unknown>>(
   componentImport: () => Promise<{ default: T }>,
   retries = 3,
   delay = 1000
@@ -403,6 +568,3 @@ export function useVirtualScroll<T>({
     handleScroll,
   };
 }
-
-import { useState } from 'react';
-import React from 'react';

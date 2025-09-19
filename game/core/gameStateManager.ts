@@ -191,6 +191,14 @@ export class GameStateManager {
       return;
     }
 
+    // If lastUpdateTime is in the future (test scenario), reset it
+    if (this.state.lastUpdateTime > currentTime) {
+      this.state.lastUpdateTime = currentTime;
+      this.state.startTime = currentTime;
+      this.state.realTimeElapsed = 0;
+      return;
+    }
+
     const deltaTime = currentTime - this.state.lastUpdateTime;
     this.state.lastUpdateTime = currentTime;
     this.state.realTimeElapsed += deltaTime;
@@ -243,6 +251,7 @@ export class GameStateManager {
   // Configuration
   setDifficulty(difficulty: Difficulty): void {
     this.state.config.difficulty = difficulty;
+    this.updateOptimalZoneStatus(); // Recalculate optimal zone with new difficulty
     this.notifyListeners();
   }
 

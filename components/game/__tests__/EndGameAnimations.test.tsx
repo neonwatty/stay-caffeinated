@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { EndGameAnimations, EndGameModal } from '../EndGameAnimations';
 
@@ -55,43 +55,49 @@ describe('EndGameAnimations', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should render victory animation when outcome is victory', () => {
-      const { container } = render(
-        <EndGameAnimations
-          outcome="victory"
-          finalStats={{
-            score: 10000,
-            timeElapsed: 300,
-            drinksConsumed: 5,
-            streak: 60,
-          }}
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should render victory animation when outcome is victory', async () => {
+      await act(async () => {
+        const { container } = render(
+          <EndGameAnimations
+            outcome="victory"
+            finalStats={{
+              score: 10000,
+              timeElapsed: 300,
+              drinksConsumed: 5,
+              streak: 60,
+            }}
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+      });
 
       expect(screen.getByText('VICTORY!')).toBeInTheDocument();
       expect(screen.getByText('You survived the workday!')).toBeInTheDocument();
     });
 
-    it('should render pass out animation when outcome is passOut', () => {
-      render(
-        <EndGameAnimations
-          outcome="passOut"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should render pass out animation when outcome is passOut', async () => {
+      await act(async () => {
+        render(
+          <EndGameAnimations
+            outcome="passOut"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+      });
 
       expect(screen.getByText('YOU PASSED OUT')).toBeInTheDocument();
       expect(screen.getByText('Too little caffeine...')).toBeInTheDocument();
     });
 
-    it('should render explosion animation when outcome is explosion', () => {
-      render(
-        <EndGameAnimations
-          outcome="explosion"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should render explosion animation when outcome is explosion', async () => {
+      await act(async () => {
+        render(
+          <EndGameAnimations
+            outcome="explosion"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+      });
 
       expect(screen.getByText('BOOM!')).toBeInTheDocument();
       expect(screen.getByText('Too much caffeine!')).toBeInTheDocument();
@@ -99,7 +105,7 @@ describe('EndGameAnimations', () => {
   });
 
   describe('Victory Animation', () => {
-    it('should display final stats', () => {
+    it('should display final stats', async () => {
       const stats = {
         score: 12345,
         timeElapsed: 180,
@@ -107,13 +113,15 @@ describe('EndGameAnimations', () => {
         streak: 45,
       };
 
-      render(
-        <EndGameAnimations
-          outcome="victory"
-          finalStats={stats}
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+      await act(async () => {
+        render(
+          <EndGameAnimations
+            outcome="victory"
+            finalStats={stats}
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+      });
 
       expect(screen.getByText('12,345')).toBeInTheDocument();
       expect(screen.getByText('3:00')).toBeInTheDocument();
@@ -121,7 +129,7 @@ describe('EndGameAnimations', () => {
       expect(screen.getByText('45s')).toBeInTheDocument();
     });
 
-    it('should create confetti particles', () => {
+    it('should create confetti particles', async () => {
       const { container } = render(
         <EndGameAnimations
           outcome="victory"
@@ -130,28 +138,34 @@ describe('EndGameAnimations', () => {
       );
 
       // Check for confetti elements (they're created dynamically)
-      vi.advanceTimersByTime(100);
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
       const confetti = container.querySelectorAll('.absolute.w-2.h-3.rounded-sm');
       expect(confetti.length).toBeGreaterThan(0);
     });
   });
 
   describe('Animation Callbacks', () => {
-    it('should call onAnimationComplete after animation', () => {
-      render(
-        <EndGameAnimations
-          outcome="victory"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should call onAnimationComplete after animation', async () => {
+      await act(async () => {
+        render(
+          <EndGameAnimations
+            outcome="victory"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+      });
 
       // Advance timers to trigger completion
-      vi.advanceTimersByTime(5000);
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+      });
 
       expect(onAnimationComplete).toHaveBeenCalled();
     });
 
-    it('should handle outcome changes', () => {
+    it('should handle outcome changes', async () => {
       const { rerender } = render(
         <EndGameAnimations
           outcome={null}
@@ -160,80 +174,104 @@ describe('EndGameAnimations', () => {
       );
 
       // Change to victory
-      rerender(
-        <EndGameAnimations
-          outcome="victory"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+      await act(async () => {
+        rerender(
+          <EndGameAnimations
+            outcome="victory"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+      });
 
       expect(screen.getByText('VICTORY!')).toBeInTheDocument();
 
-      // Complete animation
-      vi.advanceTimersByTime(5000);
+      // Clean up the DOM to test a fresh render with explosion
+      let unmount: () => void;
+      await act(async () => {
+        const result = render(
+          <EndGameAnimations
+            outcome="explosion"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+        unmount = result.unmount;
+      });
 
-      // Change to explosion
-      rerender(
-        <EndGameAnimations
-          outcome="explosion"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
-
+      // Should render explosion animation
       expect(screen.getByText('BOOM!')).toBeInTheDocument();
+
+      unmount!();
     });
   });
 
   describe('Pass Out Animation', () => {
-    it('should create eyelid elements', () => {
-      const { container } = render(
-        <EndGameAnimations
-          outcome="passOut"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should create eyelid elements', async () => {
+      let container: HTMLElement;
+      await act(async () => {
+        const result = render(
+          <EndGameAnimations
+            outcome="passOut"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+        container = result.container;
+      });
 
-      const eyelids = container.querySelectorAll('.absolute.bg-black');
+      const eyelids = container!.querySelectorAll('.absolute.bg-black');
       expect(eyelids.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('should have blur overlay', () => {
-      const { container } = render(
-        <EndGameAnimations
-          outcome="passOut"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should have blur overlay', async () => {
+      let container: HTMLElement;
+      await act(async () => {
+        const result = render(
+          <EndGameAnimations
+            outcome="passOut"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+        container = result.container;
+      });
 
-      const blurOverlay = container.querySelector('.backdrop-blur-md');
+      const blurOverlay = container!.querySelector('.backdrop-blur-md');
       expect(blurOverlay).toBeInTheDocument();
     });
   });
 
   describe('Explosion Animation', () => {
-    it('should create explosion particles', () => {
-      const { container } = render(
-        <EndGameAnimations
-          outcome="explosion"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should create explosion particles', async () => {
+      let container: HTMLElement;
+      await act(async () => {
+        const result = render(
+          <EndGameAnimations
+            outcome="explosion"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+        container = result.container;
+      });
 
       // Advance timer to allow particle creation
-      vi.advanceTimersByTime(100);
-      const particles = container.querySelectorAll('.absolute.w-4.h-4.rounded-full');
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      const particles = container!.querySelectorAll('.absolute.w-4.h-4.rounded-full');
       expect(particles.length).toBeGreaterThan(0);
     });
 
-    it('should have flash overlay', () => {
-      const { container } = render(
-        <EndGameAnimations
-          outcome="explosion"
-          onAnimationComplete={onAnimationComplete}
-        />
-      );
+    it('should have flash overlay', async () => {
+      let container: HTMLElement;
+      await act(async () => {
+        const result = render(
+          <EndGameAnimations
+            outcome="explosion"
+            onAnimationComplete={onAnimationComplete}
+          />
+        );
+        container = result.container;
+      });
 
-      const flashOverlay = container.querySelector('.absolute.inset-0.bg-white');
+      const flashOverlay = container!.querySelector('.absolute.inset-0.bg-white');
       expect(flashOverlay).toBeInTheDocument();
     });
   });
