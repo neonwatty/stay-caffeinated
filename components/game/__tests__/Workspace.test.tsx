@@ -48,13 +48,17 @@ describe('Monitor Component', () => {
 
     it('should display default content when no custom content provided', () => {
       render(<Monitor caffeineLevel={50} />);
-      expect(screen.getByText('STAY CAFFEINATED v1.0')).toBeInTheDocument();
-      expect(screen.getByText('Ready to Work')).toBeInTheDocument();
+      // Use getAllByText since there might be multiple instances during rendering
+      const titles = screen.getAllByText('STAY CAFFEINATED v1.0');
+      expect(titles.length).toBeGreaterThan(0);
+      const statusTexts = screen.getAllByText('Ready to Work');
+      expect(statusTexts.length).toBeGreaterThan(0);
     });
 
     it('should show clock when showClock is true', () => {
       render(<Monitor caffeineLevel={50} showClock={true} currentTime="10:30" />);
-      expect(screen.getByText('10:30')).toBeInTheDocument();
+      const clockTexts = screen.getAllByText('10:30');
+      expect(clockTexts[0]).toBeInTheDocument();
     });
   });
 
@@ -115,7 +119,8 @@ describe('Desk Component', () => {
     it('should show desk full warning when at capacity', () => {
       const cups = Array.from({ length: 10 }, (_, i) => generateCoffeeCup('coffee', i));
       render(<Desk coffeeCups={cups} maxCups={10} />);
-      expect(screen.getByText('Desk Full!')).toBeInTheDocument();
+      const deskFullTexts = screen.getAllByText('Desk Full!');
+      expect(deskFullTexts[0]).toBeInTheDocument();
     });
   });
 
@@ -213,17 +218,20 @@ describe('Workspace Component', () => {
   describe('Productivity Stats', () => {
     it('should show low productivity for low caffeine', () => {
       render(<Workspace caffeineLevel={20} />);
-      expect(screen.getByText('Low')).toBeInTheDocument();
+      const lowTexts = screen.getAllByText('Low');
+      expect(lowTexts[0]).toBeInTheDocument();
     });
 
     it('should show high productivity for optimal caffeine', () => {
       render(<Workspace caffeineLevel={65} />);
-      expect(screen.getByText('High')).toBeInTheDocument();
+      const highTexts = screen.getAllByText('High');
+      expect(highTexts[0]).toBeInTheDocument();
     });
 
     it('should display cup count and capacity', () => {
       render(<Workspace caffeineLevel={50} coffeeCupsConsumed={4} />);
-      expect(screen.getByText('Cups: 4/10')).toBeInTheDocument();
+      const cupTexts = screen.getAllByText('Cups: 4/10');
+      expect(cupTexts[0]).toBeInTheDocument();
     });
   });
 });

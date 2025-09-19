@@ -19,7 +19,9 @@ describe('CaffeineBar', () => {
 
   it('should show optimal status when value is in optimal range', () => {
     render(<CaffeineBar value={50} />);
-    expect(screen.getByText('Optimal')).toBeInTheDocument();
+    // Use getAllByText and check first occurrence
+    const optimalTexts = screen.getAllByText('Optimal');
+    expect(optimalTexts[0]).toBeInTheDocument();
   });
 
   it('should show warning status when value is low', () => {

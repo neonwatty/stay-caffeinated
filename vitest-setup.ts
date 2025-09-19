@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import { vi, afterAll, beforeAll, afterEach } from 'vitest';
 import React from 'react';
 
 // Make React available globally for tests
@@ -7,6 +8,102 @@ global.React = React;
 
 // Set NODE_ENV to test for anime.js wrapper
 process.env.NODE_ENV = 'test';
+
+// Track all active timers and intervals
+const activeTimers = new Set<NodeJS.Timeout>();
+const originalSetTimeout = global.setTimeout;
+const originalSetInterval = global.setInterval;
+const originalClearTimeout = global.clearTimeout;
+const originalClearInterval = global.clearInterval;
+
+// Override timer functions to track them
+global.setTimeout = function(...args: Parameters<typeof setTimeout>) {
+  const timer = originalSetTimeout.apply(this, args);
+  activeTimers.add(timer);
+  return timer;
+};
+
+global.setInterval = function(...args: Parameters<typeof setInterval>) {
+  const timer = originalSetInterval.apply(this, args);
+  activeTimers.add(timer);
+  return timer;
+};
+
+global.clearTimeout = function(timer: NodeJS.Timeout | undefined) {
+  if (timer) {
+    activeTimers.delete(timer);
+    originalClearTimeout(timer);
+  }
+};
+
+global.clearInterval = function(timer: NodeJS.Timeout | undefined) {
+  if (timer) {
+    activeTimers.delete(timer);
+    originalClearInterval(timer);
+  }
+};
+
+// Global cleanup hooks
+beforeAll(() => {
+  // Clear any pre-existing timers
+  activeTimers.clear();
+});
+
+afterEach(() => {
+  // Clean up React Testing Library
+  cleanup();
+
+  // Clear all timers after each test
+  vi.clearAllTimers();
+
+  // Force clear any remaining active timers
+  activeTimers.forEach(timer => {
+    originalClearTimeout(timer);
+    originalClearInterval(timer);
+  });
+  activeTimers.clear();
+
+  // Reset all mocks
+  vi.clearAllMocks();
+
+  // Clear any pending animation frames
+  if (typeof window !== 'undefined' && window.cancelAnimationFrame) {
+    let id = window.requestAnimationFrame(() => {});
+    while (id > 0) {
+      window.cancelAnimationFrame(id);
+      id--;
+    }
+  }
+});
+
+afterAll(() => {
+  // Final cleanup
+  vi.clearAllTimers();
+  vi.useRealTimers();
+  vi.clearAllMocks();
+
+  // Clear any remaining timers
+  activeTimers.forEach(timer => {
+    originalClearTimeout(timer);
+    originalClearInterval(timer);
+  });
+  activeTimers.clear();
+
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc();
+  }
+});
+
+// Handle process termination
+process.on('exit', () => {
+  // Clear all timers on exit
+  activeTimers.forEach(timer => {
+    originalClearTimeout(timer);
+    originalClearInterval(timer);
+  });
+  activeTimers.clear();
+});
 
 // Mock the anime wrapper directly
 vi.mock('@/lib/anime', () => {

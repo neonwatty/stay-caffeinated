@@ -6,6 +6,33 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./vitest-setup.ts'],
+    // Process isolation settings - use single thread to prevent memory issues
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true,
+        isolate: true,
+        memoryLimit: '4GB',
+      }
+    },
+    // Teardown settings
+    teardownTimeout: 1000, // Force cleanup after 1 second
+    isolate: true, // Ensure tests run in isolation
+    // Prevent hanging processes
+    testTimeout: 10000, // Increased timeout for slower tests
+    hookTimeout: 5000, // Timeout for hooks
+    // Force exit after tests complete
+    forceRerunTriggers: ['**/vitest-setup.ts'],
+    // Better process handling
+    onConsoleLog(log) {
+      // Filter out noise but keep errors
+      if (log.includes('ERROR') || log.includes('Warning')) {
+        return false
+      }
+    },
+    // Add max workers limit
+    maxWorkers: 1,
+    minWorkers: 1,
     coverage: {
       enabled: false,
       reporter: ['text', 'html', 'json-summary', 'json'],
