@@ -212,7 +212,7 @@ export class GameErrorBoundary extends Component<GameErrorBoundaryProps, GameErr
                 <Button
                   onClick={this.resetErrorBoundary}
                   variant="primary"
-                  size="medium"
+                  size="md"
                 >
                   Try Again
                 </Button>
@@ -222,7 +222,7 @@ export class GameErrorBoundary extends Component<GameErrorBoundaryProps, GameErr
                     this.resetErrorBoundary();
                   }}
                   variant="secondary"
-                  size="medium"
+                  size="md"
                 >
                   Reset Game
                 </Button>
@@ -370,7 +370,7 @@ export function NetworkErrorBoundary({
               onRetry?.();
             }}
             variant="secondary"
-            size="small"
+            size="sm"
           >
             Retry {retryCount > 0 && `(${retryCount})`}
           </Button>

@@ -38,8 +38,8 @@ export function WebVitals() {
     }
 
     // Send to Google Analytics if available
-    if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
-      (window as unknown as { gtag: Function }).gtag('event', metric.name, {
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag) {
+      (window as unknown as { gtag: (...args: unknown[]) => void }).gtag('event', metric.name, {
         value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
         event_label: metric.id,
         non_interaction: true,

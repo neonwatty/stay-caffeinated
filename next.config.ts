@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
-  swcMinify: true,
   compiler: {
     // Remove console logs in production
     removeConsole: process.env.NODE_ENV === "production" ? {

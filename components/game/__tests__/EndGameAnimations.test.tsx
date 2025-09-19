@@ -14,7 +14,7 @@ vi.mock('@/lib/anime', () => {
     pause: vi.fn(),
   };
 
-  const mockAnime = vi.fn((options: any) => ({
+  const mockAnime = vi.fn((options: unknown) => ({
     pause: vi.fn(),
     play: vi.fn(),
     restart: vi.fn(),

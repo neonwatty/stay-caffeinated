@@ -13,7 +13,7 @@ export function ScreenReaderAnnouncements() {
 
   // Announce caffeine level changes
   useEffect(() => {
-    const level = gameState.stats.caffeineLevel;
+    const level = gameState.stats.currentCaffeineLevel;
     const isOptimal = gameState.stats.isInOptimalZone;
     
     if (level <= 10) {
@@ -26,11 +26,11 @@ export function ScreenReaderAnnouncements() {
       setAnnouncement(`Caffeine level optimal at ${Math.round(level)} percent`);
       setPriority('polite');
     }
-  }, [gameState.stats.caffeineLevel, gameState.stats.isInOptimalZone]);
+  }, [gameState.stats.currentCaffeineLevel, gameState.stats.isInOptimalZone]);
 
   // Announce health changes
   useEffect(() => {
-    const health = gameState.stats.health;
+    const health = gameState.stats.currentHealthLevel;
     
     if (health <= 20) {
       setAnnouncement(`Critical: Health at ${Math.round(health)} percent`);
@@ -39,7 +39,7 @@ export function ScreenReaderAnnouncements() {
       setAnnouncement(`Warning: Health at ${Math.round(health)} percent`);
       setPriority('polite');
     }
-  }, [gameState.stats.health]);
+  }, [gameState.stats.currentHealthLevel]);
 
   // Announce game state changes
   useEffect(() => {
@@ -59,13 +59,6 @@ export function ScreenReaderAnnouncements() {
     }
   }, [gameState.currentState, gameState.scoreDisplay]);
 
-  // Announce achievements
-  useEffect(() => {
-    if (gameState.lastAchievement) {
-      setAnnouncement(`Achievement unlocked: ${gameState.lastAchievement.name}`);
-      setPriority('polite');
-    }
-  }, [gameState.lastAchievement]);
 
   return (
     <>

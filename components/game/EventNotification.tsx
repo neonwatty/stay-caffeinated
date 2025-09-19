@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { GameEvent, ActiveEvent } from '@/types';
-import * as anime from 'animejs';
+import anime from '@/lib/anime';
 
 interface EventNotificationProps {
   activeEvent: ActiveEvent | null;
@@ -26,8 +26,8 @@ export default function EventNotification({
   const progressRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLDivElement>(null);
   const [displayEvent, setDisplayEvent] = useState<GameEvent | null>(null);
-  const animationRef = useRef<anime.AnimeInstance | null>(null);
-  const progressAnimationRef = useRef<anime.AnimeInstance | null>(null);
+  const animationRef = useRef<ReturnType<typeof anime> | null>(null);
+  const progressAnimationRef = useRef<ReturnType<typeof anime> | null>(null);
 
   // Update display event
   useEffect(() => {

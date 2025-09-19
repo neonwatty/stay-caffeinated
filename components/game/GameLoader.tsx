@@ -99,8 +99,8 @@ async function preloadGameAssets() {
   // Preload fonts if needed
   if ('fonts' in document) {
     assetPromises.push(
-      (document as any).fonts.load('1rem Geist'),
-      (document as any).fonts.load('1rem "Geist Mono"')
+      (document as unknown as { fonts: { load: (font: string) => Promise<void> } }).fonts.load('1rem Geist'),
+      (document as unknown as { fonts: { load: (font: string) => Promise<void> } }).fonts.load('1rem "Geist Mono"')
     );
   }
 
@@ -114,10 +114,10 @@ async function initializeGameSystems() {
   // Initialize audio context (if needed)
   if (typeof window !== 'undefined' && 'AudioContext' in window) {
     try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContext = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
       const audioContext = new AudioContext();
       // Store in global for later use
-      (window as any).__audioContext = audioContext;
+      (window as unknown as { __audioContext: AudioContext }).__audioContext = audioContext;
     } catch (error) {
       console.warn('Failed to initialize audio:', error);
     }

@@ -41,14 +41,15 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
   const optimalIndicatorRef = useRef<HTMLDivElement>(null);
 
   // Animation configurations
-  const { targetRef: scoreRef, controls: scoreControls } = useAnimation({
+  const scoreAnimation = useAnimation({
     scale: [1, 1.2, 1],
     duration: 400,
     easing: 'easeOutElastic(1, 0.5)',
     autoplay: false,
   });
+  const scoreRef = scoreAnimation.ref as React.RefObject<HTMLDivElement>;
 
-  const { controls: timeControls } = useAnimation({
+  const timeControls = useAnimation({
     rotate: 360,
     duration: 1000,
     easing: 'linear',
@@ -148,14 +149,14 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
 
   // Animate score changes
   useEffect(() => {
-    if (scoreControls?.play && score > 0) {
-      scoreControls.play();
+    if (scoreAnimation && score > 0) {
+      scoreAnimation.play();
     }
-  }, [score, scoreControls]);
+  }, [score, scoreAnimation]);
 
   // Time warning animation
   useEffect(() => {
-    if (timeRemaining < 60 && timeRemaining % 10 === 0 && timeControls?.play) {
+    if (timeRemaining < 60 && timeRemaining % 10 === 0 && timeControls) {
       timeControls.play();
     }
   }, [timeRemaining, timeControls]);

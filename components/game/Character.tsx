@@ -138,7 +138,7 @@ export const Character: React.FC<CharacterProps> = ({
         duration: blinkDuration,
         easing: 'easeInOutQuad',
         loop: true,
-        delay: (el, i) => i * 50,
+        delay: (_el: unknown, i: number) => i * 50,
         loopBegin: function() {
           // Random delay between blinks
           const randomDelay = Math.random() * blinkInterval + blinkInterval;

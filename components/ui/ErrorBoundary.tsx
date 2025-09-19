@@ -247,7 +247,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
             <Button
               onClick={onRetry}
               variant="primary"
-              size="medium"
+              size="md"
             >
               Try Again
             </Button>
@@ -255,7 +255,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
               <Button
                 onClick={() => window.location.href = '/'}
                 variant="secondary"
-                size="medium"
+                size="md"
               >
                 Go Home
               </Button>

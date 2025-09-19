@@ -54,6 +54,24 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
     }
   };
 
+  const hideNotification = useCallback(() => {
+    if (!notificationRef.current) return;
+
+    anime({
+      targets: notificationRef.current,
+      translateY: position === 'bottom' ? 100 : -100,
+      opacity: 0,
+      scale: 0.8,
+      duration: 400,
+      easing: 'easeInExpo',
+      complete: () => {
+        setIsVisible(false);
+        setCurrentAchievement(null);
+        onComplete?.();
+      },
+    });
+  }, [position, onComplete]);
+
   const showNotification = useCallback(() => {
     if (!notificationRef.current || !currentAchievement) return;
 
@@ -90,24 +108,6 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
       hideNotification();
     }, duration);
   }, [currentAchievement, duration, position, hideNotification]);
-
-  const hideNotification = useCallback(() => {
-    if (!notificationRef.current) return;
-
-    anime({
-      targets: notificationRef.current,
-      translateY: position === 'bottom' ? 100 : -100,
-      opacity: 0,
-      scale: 0.8,
-      duration: 400,
-      easing: 'easeInExpo',
-      complete: () => {
-        setIsVisible(false);
-        setCurrentAchievement(null);
-        onComplete?.();
-      },
-    });
-  }, [position, onComplete]);
 
   // Handle new achievement
   useEffect(() => {
@@ -268,12 +268,12 @@ export const AchievementQueue: React.FC<AchievementQueueProps> = ({
     // This would be connected to your achievement system
     // For now, we'll expose it on window for testing
     if (typeof window !== 'undefined') {
-      (window as Record<string, unknown>).showAchievement = addAchievement;
+      (window as unknown as Record<string, unknown>).showAchievement = addAchievement;
     }
 
     return () => {
       if (typeof window !== 'undefined') {
-        delete (window as Record<string, unknown>).showAchievement;
+        delete (window as unknown as Record<string, unknown>).showAchievement;
       }
     };
   }, [addAchievement]);

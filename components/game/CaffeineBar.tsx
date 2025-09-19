@@ -167,9 +167,6 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
           <StatusBadge
             status={status.label}
             color={status.color}
-            role="status"
-            aria-live="polite"
-            aria-label={`Status: ${status.label}`}
           />
         </div>
       )}

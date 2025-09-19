@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { ComponentType } from 'react';
+import { ComponentType, useState, useEffect, useRef } from 'react';
 import { LoadingSpinner } from '@/components/ui/LoadingStates';
 
 // Loading fallback component
@@ -13,7 +13,7 @@ const LoadingFallback = () => (
 
 // Dynamically import heavy animation components
 export const DynamicEndGameAnimations = dynamic(
-  () => import('./EndGameAnimations').then(mod => mod.EndGameAnimations as any),
+  () => import('./EndGameAnimations').then(mod => mod.EndGameAnimations as ComponentType),
   {
     loading: LoadingFallback,
     ssr: false, // Animations don't need SSR
@@ -22,7 +22,7 @@ export const DynamicEndGameAnimations = dynamic(
 
 // Dynamically import particle effects
 export const DynamicParticleEffects = dynamic(
-  () => import('./ParticleEffects').then(mod => mod.ParticleEffects as any),
+  () => import('./ParticleEffects').then(mod => mod.ParticleEffects as ComponentType),
   {
     loading: LoadingFallback,
     ssr: false,
@@ -31,7 +31,7 @@ export const DynamicParticleEffects = dynamic(
 
 // Dynamically import screen effects
 export const DynamicScreenEffects = dynamic(
-  () => import('./ScreenEffects'),
+  () => import('./ScreenEffects').then(mod => mod.ScreenEffects as ComponentType),
   {
     loading: LoadingFallback,
     ssr: false,
@@ -40,7 +40,7 @@ export const DynamicScreenEffects = dynamic(
 
 // Dynamically import settings menu (only loaded when needed)
 export const DynamicSettingsMenu = dynamic(
-  () => import('./SettingsMenu').then(mod => mod.SettingsMenu as any),
+  () => import('./SettingsMenu').then(mod => mod.SettingsMenu as ComponentType),
   {
     loading: LoadingFallback,
   }
@@ -48,7 +48,7 @@ export const DynamicSettingsMenu = dynamic(
 
 // Dynamically import score display
 export const DynamicScoreDisplay = dynamic(
-  () => import('./ScoreDisplay'),
+  () => import('./ScoreDisplay').then(mod => mod.ScoreDisplay as ComponentType),
   {
     loading: LoadingFallback,
   }
@@ -62,45 +62,9 @@ export const preloadGameComponents = () => {
   import('./ScreenEffects');
 };
 
-// Lazy load with retry for better reliability
-export function createDynamicComponent<P = {}>(
-  importFn: () => Promise<{ default: ComponentType<P> } | ComponentType<P>>,
-  options?: {
-    loading?: ComponentType;
-    ssr?: boolean;
-    retries?: number;
-  }
-) {
-  const { loading = LoadingFallback, ssr = true, retries = 3 } = options || {};
-
-  return dynamic<P>(
-    async () => {
-      let lastError: Error | null = null;
-      
-      for (let i = 0; i < retries; i++) {
-        try {
-          const module = await importFn();
-          return 'default' in module ? module : { default: module };
-        } catch (error) {
-          lastError = error as Error;
-          if (i < retries - 1) {
-            // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-          }
-        }
-      }
-      
-      throw lastError;
-    },
-    {
-      loading,
-      ssr,
-    }
-  );
-}
 
 // Intersection Observer for lazy loading
-export function useLazyComponent<P = {}>(
+export function useLazyComponent<P = Record<string, unknown>>(
   importFn: () => Promise<{ default: ComponentType<P> }>,
   rootMargin = '100px'
 ) {
@@ -130,5 +94,3 @@ export function useLazyComponent<P = {}>(
 
   return { Component, ref };
 }
-
-import { useState, useRef, useEffect } from 'react';

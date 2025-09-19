@@ -5,12 +5,14 @@
  * Runs various optimizations on the build output
  */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('path');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { promisify } = require('util');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { exec } = require('child_process');
-
-const execAsync = promisify(exec);
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 
@@ -109,7 +111,7 @@ async function optimizeImages() {
     // Image optimization logic would go here
     // For now, just log that it would happen
     console.log(`${colors.green}  ✓ Images optimized${colors.reset}`);
-  } catch (e) {
+  } catch {
     console.log(`${colors.yellow}  Sharp not installed, skipping image optimization${colors.reset}`);
     console.log(`${colors.yellow}  Run 'npm install --save-dev sharp' to enable${colors.reset}`);
   }
