@@ -48,21 +48,34 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  async componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { onError } = this.props;
-    
-    // Log error details
-    console.error('Error caught by ErrorBoundary:', error, errorInfo);
-    
-    // Update state with error details
-    this.setState(prevState => ({
-      errorInfo,
-      errorCount: prevState.errorCount + 1,
-    }));
-    
+
+    // Import error handling utilities
+    const { GlobalErrorHandler } = await import('@/utils/errorHandling');
+    const handler = GlobalErrorHandler.getInstance();
+
+    // Log error details with context
+    const context = {
+      component: this.constructor.name,
+      level: this.props.level || 'component',
+      errorCount: this.state.errorCount + 1,
+    };
+
+    // Attempt recovery
+    const recovered = await handler.handleError(error, errorInfo, context);
+
+    if (!recovered) {
+      // Update state with error details
+      this.setState(prevState => ({
+        errorInfo,
+        errorCount: prevState.errorCount + 1,
+      }));
+    }
+
     // Call error handler if provided
     onError?.(error, errorInfo);
-    
+
     // Report to error tracking service in production
     if (process.env.NODE_ENV === 'production') {
       this.reportError(error, errorInfo);
