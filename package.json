@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:optimize": "npm run build && node scripts/optimize-build.js",
     "export": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",

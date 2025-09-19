@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -16,7 +22,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Only deploy if CI passed (when triggered by workflow_run)
+  check-ci:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - name: Check CI status
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+              echo "deploy=true" >> $GITHUB_OUTPUT
+            else
+              echo "CI failed, skipping deployment"
+              echo "deploy=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          fi
+
   build:
+    needs: check-ci
+    if: needs.check-ci.outputs.should-deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,10 +74,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run tests before deployment
+        run: npm test
+
       - name: Build with Next.js
         run: npm run build
         env:
           NODE_ENV: production
+          NEXT_PUBLIC_BUILD_ID: ${{ github.sha }}
+          NEXT_PUBLIC_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

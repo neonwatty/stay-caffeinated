@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "buildTime": "2025-09-19T14:55:39.126Z",
+  "buildId": "local",
+  "environment": "production",
+  "timestamp": "2025-09-19T14:55:39.124Z",
+  "totalSize": 1306714,
+  "totalSizeFormatted": "1 MB",
+  "directories": {
+    "_next": {
+      "size": 1193535,
+      "sizeFormatted": "1 MB"
+    }
+  }
+}
