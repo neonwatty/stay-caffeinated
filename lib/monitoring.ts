@@ -213,24 +213,25 @@ class MonitoringService {
     this.metricsQueue = [];
 
     // Send to Sentry if configured
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN && typeof window !== 'undefined') {
-      try {
-        const Sentry = await import('@sentry/nextjs');
-        errors.forEach(error => {
-          if (error.level === 'error') {
-            Sentry.captureException(new Error(error.message), {
-              contexts: {
-                custom: error.context || {},
-              },
-            });
-          } else {
-            Sentry.captureMessage(error.message, error.level);
-          }
-        });
-      } catch (e) {
-        console.warn('Failed to send errors to Sentry:', e);
-      }
-    }
+    // Sentry integration commented out - install @sentry/nextjs if needed
+    // if (process.env.NEXT_PUBLIC_SENTRY_DSN && typeof window !== 'undefined') {
+    //   try {
+    //     const Sentry = await import('@sentry/nextjs');
+    //     errors.forEach(error => {
+    //       if (error.level === 'error') {
+    //         Sentry.captureException(new Error(error.message), {
+    //           contexts: {
+    //             custom: error.context || {},
+    //           },
+    //         });
+    //       } else {
+    //         Sentry.captureMessage(error.message, error.level);
+    //       }
+    //     });
+    //   } catch (e) {
+    //     console.warn('Failed to send errors to Sentry:', e);
+    //   }
+    // }
 
     // Send metrics to analytics endpoint if configured
     if (metrics.length > 0 && process.env.NEXT_PUBLIC_API_URL) {

@@ -118,6 +118,8 @@ export class MemoryMonitor {
         totalJSHeapSize: memory.totalJSHeapSize,
         jsHeapSizeLimit: memory.jsHeapSizeLimit,
         percentUsed: (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100,
+        heapUsed: memory.usedJSHeapSize,
+        heapTotal: memory.totalJSHeapSize,
       };
       this.notifyCallbacks(info);
     }
@@ -347,7 +349,7 @@ export function requestIdleCallbackShim(
       didTimeout: false,
       timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
     } as IdleDeadline);
-  }, 1);
+  }, 1) as unknown as number;
 }
 
 /**
@@ -379,7 +381,7 @@ export function measureRenderTime(componentName: string) {
       });
 
       renderStartRef.current = performance.now();
-      return React.createElement(Component, props);
+      return React.createElement(Component, props as any);
     };
 
     MeasuredComponent.displayName = `Measured(${componentName})`;

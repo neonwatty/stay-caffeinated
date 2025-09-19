@@ -193,18 +193,20 @@ export class PowerUpSystem {
    * Update active power-ups
    */
   updateActivePowerUps(activePowerUps: ActivePowerUp[], currentTime: number): ActivePowerUp[] {
-    return activePowerUps
-      .map(activePowerUp => {
-        if (activePowerUp.endTime && currentTime >= activePowerUp.endTime) {
-          return null; // Power-up expired
-        }
+    const updated: ActivePowerUp[] = [];
 
-        return {
-          ...activePowerUp,
-          remaining: activePowerUp.endTime ? activePowerUp.endTime - currentTime : undefined
-        };
-      })
-      .filter((p): p is ActivePowerUp => p !== null);
+    for (const activePowerUp of activePowerUps) {
+      if (activePowerUp.endTime && currentTime >= activePowerUp.endTime) {
+        continue; // Power-up expired
+      }
+
+      updated.push({
+        ...activePowerUp,
+        remaining: activePowerUp.endTime ? activePowerUp.endTime - currentTime : undefined
+      });
+    }
+
+    return updated;
   }
 
   /**

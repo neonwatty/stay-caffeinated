@@ -32,8 +32,6 @@ const nextConfig: NextConfig = {
       "react",
       "react-dom",
     ],
-    // Instrument code for performance monitoring
-    instrumentationHook: isProduction,
   },
   // Production build optimizations
   productionBrowserSourceMaps: false,

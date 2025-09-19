@@ -56,6 +56,10 @@ const PowerupItem: React.FC<PowerupItemProps> = ({
     return null;
   };
 
+  if (!powerup) {
+    return null; // PowerUp not found
+  }
+
   const getStatusClass = () => {
     if (disabled) return 'opacity-50 cursor-not-allowed';
     if (isActive) return 'ring-2 ring-green-500 animate-pulse';
@@ -94,7 +98,7 @@ const PowerupItem: React.FC<PowerupItemProps> = ({
         )}
 
         {/* Cost indicator for power nap */}
-        {powerup.cost > 0 && (
+        {powerup.cost && powerup.cost > 0 && (
           <div className="absolute bottom-1 left-1 text-xs text-gray-400">
             {powerup.cost / 1000}s cost
           </div>
@@ -125,8 +129,8 @@ const PowerupItem: React.FC<PowerupItemProps> = ({
               {powerup.effect.caffeineDepletionReduction && (
                 <div>-{(powerup.effect.caffeineDepletionReduction * 100).toFixed(0)}% Depletion</div>
               )}
-              <div className="mt-1">Duration: {powerup.duration / 1000}s</div>
-              <div>Cooldown: {powerup.cooldown / 1000}s</div>
+              {powerup.duration && <div className="mt-1">Duration: {powerup.duration / 1000}s</div>}
+              {powerup.cooldown && <div>Cooldown: {powerup.cooldown / 1000}s</div>}
             </div>
           </div>
         </div>

@@ -127,7 +127,7 @@ export class StorageManager {
   /**
    * Set item in storage with metadata
    */
-  private setItem<T>(key: string, data: T): boolean {
+  public setItem<T>(key: string, data: T): boolean {
     if (!this.isAvailable) {
       this.cache.set(key, data);
       return true;
@@ -158,7 +158,7 @@ export class StorageManager {
   /**
    * Get item from storage with validation
    */
-  private getItem<T>(key: string): T | null {
+  public getItem<T>(key: string): T | null {
     if (this.cache.has(key)) {
       return this.cache.get(key) as T;
     }

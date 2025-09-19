@@ -6,10 +6,11 @@
 import { EventSystem, type EventSystemState } from './eventSystem';
 import { PowerUpSystem, type PowerUpSystemState } from './powerUpSystem';
 import { ScoringSystem } from './scoringSystem';
-import type { GameState, Difficulty } from '@/types';
+import type { Difficulty } from '@/types';
 import type { PowerUpSpawn } from '@/types/powerups';
+import type { GameStateData } from '../core/gameStateManager';
 
-export interface EnhancedGameState extends GameState {
+export interface EnhancedGameState extends GameStateData {
   eventState: EventSystemState;
   powerUpState: PowerUpSystemState;
   comboMultiplier: number;
@@ -49,27 +50,30 @@ export class GameMechanics {
    * Initialize enhanced game state
    */
   initializeState(): EnhancedGameState {
+    const now = Date.now();
     return {
-      // Base game state
-      caffeineLevel: 50,
-      healthLevel: 100,
-      score: 0,
-      timeElapsed: 0,
-      isGameOver: false,
-      isPaused: false,
-      difficulty: this.config.difficulty,
+      // Base GameStateData fields
+      state: 'playing',
       stats: {
-        caffeineLevel: 50,
-        healthLevel: 100,
+        currentCaffeineLevel: 50,
+        currentHealthLevel: 100,
         score: 0,
         drinksConsumed: 0,
-        timeInOptimalZone: 0,
         streak: 0,
-        currentHealthLevel: 100,
-        currentCaffeineLevel: 50,
-        timeSurvived: 0,
-        timestamp: Date.now()
+        timeElapsed: 0,
+        isInOptimalZone: false
       },
+      config: {
+        difficulty: this.config.difficulty,
+        soundEnabled: true,
+        particlesEnabled: true,
+        screenShakeEnabled: true
+      },
+      startTime: now,
+      lastUpdateTime: now,
+      gameTime: 0,
+      realTimeElapsed: 0,
+      isPaused: false,
 
       // Enhanced mechanics
       eventState: {
@@ -137,11 +141,11 @@ export class GameMechanics {
         // Event ended
         const eventScore = this.eventSystem.calculateEventScore(
           newEventState.activeEvent.event,
-          state.healthLevel > 0,
-          state.caffeineLevel
+          state.stats.currentHealthLevel > 0,
+          state.stats.currentCaffeineLevel
         );
 
-        state.score += eventScore;
+        state.stats.score += eventScore;
         newEventState.activeEvent = null;
         newEventState.nextEventTime = currentTime + 30000; // Next event in 30s
       } else {
@@ -218,18 +222,18 @@ export class GameMechanics {
 
     // Apply instant effects
     if (effects.instantCaffeine > 0) {
-      state.caffeineLevel = Math.min(100, state.caffeineLevel + effects.instantCaffeine);
+      state.stats.currentCaffeineLevel = Math.min(100, state.stats.currentCaffeineLevel + effects.instantCaffeine);
     }
     if (effects.instantHealth > 0) {
-      state.healthLevel = Math.min(100, state.healthLevel + effects.instantHealth);
+      state.stats.currentHealthLevel = Math.min(100, state.stats.currentHealthLevel + effects.instantHealth);
     }
 
     // Auto-balance caffeine if power-up is active
     if (effects.shouldAutoBalance) {
       const optimalTarget = 60; // Middle of optimal zone
-      const difference = optimalTarget - state.caffeineLevel;
+      const difference = optimalTarget - state.stats.currentCaffeineLevel;
       const adjustmentRate = 0.5; // Smooth adjustment
-      state.caffeineLevel += difference * adjustmentRate * (deltaTime / 1000);
+      state.stats.currentCaffeineLevel += difference * adjustmentRate * (deltaTime / 1000);
     }
 
     return {
@@ -242,7 +246,7 @@ export class GameMechanics {
    * Update scoring with all enhancements
    */
   private updateScoring(state: EnhancedGameState, deltaTime: number): EnhancedGameState {
-    const isInOptimalZone = state.caffeineLevel >= 40 && state.caffeineLevel <= 70;
+    const isInOptimalZone = state.stats.currentCaffeineLevel >= 40 && state.stats.currentCaffeineLevel <= 70;
 
     // Calculate combo multiplier
     const comboMultiplier = this.scoringSystem.getComboMultiplier(state.stats.streak);
@@ -250,7 +254,7 @@ export class GameMechanics {
     // Get power-up multipliers
     const powerUpEffects = this.powerUpSystem.applyPowerUpEffects(
       state.powerUpState.activePowerUps,
-      0, 0, 0
+      0, 0
     );
 
     // Calculate base score
@@ -258,7 +262,7 @@ export class GameMechanics {
       deltaTime,
       isInOptimalZone,
       state.stats.streak,
-      state.difficulty
+      state.config.difficulty
     );
 
     // Apply all multipliers and bonuses
@@ -271,8 +275,8 @@ export class GameMechanics {
 
     // Check for milestones
     const milestones = this.scoringSystem.checkMilestones(
-      state.score + enhancedScore,
-      state.score
+      state.stats.score + enhancedScore,
+      state.stats.score
     );
 
     if (milestones.length > 0) {
@@ -281,7 +285,10 @@ export class GameMechanics {
 
     return {
       ...state,
-      score: state.score + enhancedScore,
+      stats: {
+        ...state.stats,
+        score: state.stats.score + enhancedScore
+      },
       comboMultiplier
     };
   }
@@ -294,7 +301,7 @@ export class GameMechanics {
       totalEventsCompleted: state.eventState.totalEventsTriggered,
       totalPowerUpsCollected: state.powerUpState.collectedCount,
       maxStreak: state.stats.streak,
-      finalScore: state.score
+      finalScore: state.stats.score
     });
   }
 
@@ -309,7 +316,7 @@ export class GameMechanics {
       founder: 1.6
     };
 
-    return 2 * (difficultyMultipliers[state.difficulty] || 1);
+    return 2 * (difficultyMultipliers[state.config.difficulty] || 1);
   }
 
   /**
@@ -323,7 +330,7 @@ export class GameMechanics {
       founder: 1.4
     };
 
-    return 1 * (difficultyMultipliers[state.difficulty] || 1);
+    return 1 * (difficultyMultipliers[state.config.difficulty] || 1);
   }
 
   /**
@@ -356,7 +363,7 @@ export class GameMechanics {
       }
 
       // Add collection score
-      newState.score += this.powerUpSystem.calculateCollectionScore(powerUpSpawn.powerUp);
+      newState.stats.score += this.powerUpSystem.calculateCollectionScore(powerUpSpawn.powerUp);
     }
 
     return newState;

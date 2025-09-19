@@ -15,7 +15,7 @@ import type {
 /**
  * Power-up definitions
  */
-export const POWERUP_DEFINITIONS: Record<PowerUpType, PowerUp> = {
+export const POWERUP_DEFINITIONS: Partial<Record<PowerUpType, PowerUp>> = {
   proteinBar: {
     id: 'proteinBar',
     name: 'Protein Bar',
@@ -25,6 +25,7 @@ export const POWERUP_DEFINITIONS: Record<PowerUpType, PowerUp> = {
     duration: 30000, // 30 seconds
     cost: 0,
     cooldown: 45000, // 45 seconds
+    rarity: 'common',
     effect: {
       type: 'duration',
       crashReduction: 0.5, // 50% crash reduction
@@ -41,6 +42,7 @@ export const POWERUP_DEFINITIONS: Record<PowerUpType, PowerUp> = {
     duration: 20000, // 20 seconds
     cost: 0,
     cooldown: 60000, // 60 seconds
+    rarity: 'rare',
     effect: {
       type: 'instant',
       healthBoost: 25,
@@ -57,6 +59,7 @@ export const POWERUP_DEFINITIONS: Record<PowerUpType, PowerUp> = {
     duration: 15000, // 15 second effect
     cost: 5000, // 5 second nap time
     cooldown: 90000, // 90 seconds
+    rarity: 'epic',
     effect: {
       type: 'instant',
       caffeineBoost: 30,
@@ -98,7 +101,7 @@ export class PowerUpSystem {
 
     // Check active power-ups
     this.activePowerUps.forEach((activePowerUp, type) => {
-      if (currentTime >= activePowerUp.endTime) {
+      if (activePowerUp.endTime && currentTime >= activePowerUp.endTime) {
         this.deactivatePowerUp(type);
       }
     });
@@ -108,7 +111,9 @@ export class PowerUpSystem {
       if (currentTime >= cooldownEnd) {
         this.cooldowns.delete(type);
         const powerUp = POWERUP_DEFINITIONS[type];
-        this.callbacks.onPowerUpReady?.(powerUp);
+        if (powerUp) {
+          this.callbacks.onPowerUpReady?.(powerUp);
+        }
       }
     });
   }
@@ -122,6 +127,9 @@ export class PowerUpSystem {
     }
 
     const powerUp = POWERUP_DEFINITIONS[type];
+    if (!powerUp) {
+      return false;
+    }
 
     // Check if we've reached max active power-ups
     if (this.activePowerUps.size >= this.config.maxActivePowerUps) {
@@ -129,7 +137,7 @@ export class PowerUpSystem {
     }
 
     // Apply power nap cost (pause time)
-    if (powerUp.cost > 0) {
+    if (powerUp.cost && powerUp.cost > 0) {
       // The game should handle the pause for the cost duration
       // This is just tracking the effect duration
     }
@@ -138,7 +146,7 @@ export class PowerUpSystem {
     const activePowerUp: ActivePowerUp = {
       powerUp,
       startTime: currentTime,
-      endTime: currentTime + powerUp.duration,
+      endTime: powerUp.duration ? currentTime + powerUp.duration : undefined,
       isActive: true,
     };
 
@@ -165,6 +173,7 @@ export class PowerUpSystem {
    */
   private setCooldown(type: PowerUpType, currentTime: number): void {
     const powerUp = POWERUP_DEFINITIONS[type];
+    if (!powerUp || !powerUp.cooldown) return;
     const cooldownDuration = powerUp.cooldown * this.config.globalCooldownMultiplier;
     this.cooldowns.set(type, currentTime + cooldownDuration);
   }
