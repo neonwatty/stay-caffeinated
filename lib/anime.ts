@@ -1,25 +1,67 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-require-imports */
 
 // Anime.js v4 wrapper for Next.js/TypeScript
-let anime: any;
+import type { animate as AnimateType } from 'animejs';
 
-// Check if we're in a test environment or browser
-if (typeof window !== 'undefined' || process.env.NODE_ENV === 'test') {
-  // Dynamic import for client-side and test environment
-  const animeLib = require('animejs');
-  // In v4, the main animation function is called 'animate'
-  anime = animeLib.animate || animeLib.default || animeLib;
-  // Add utility functions
-  if (animeLib.stagger) anime.stagger = animeLib.stagger;
-  if (animeLib.utils) {
-    anime.random = animeLib.utils.random;
-    anime.remove = animeLib.utils.remove;
+let animeModule: any = null;
+let isLoaded = false;
+
+// Create a proxy that will load anime.js on first use
+const animeProxy: any = new Proxy({}, {
+  get(target, prop) {
+    if (!isLoaded && typeof window !== 'undefined') {
+      // Load anime.js synchronously when first accessed
+      animeModule = require('animejs');
+      isLoaded = true;
+    }
+
+    if (!animeModule) {
+      // Return a no-op function for SSR
+      return () => ({ pause: () => {}, play: () => {}, restart: () => {} });
+    }
+
+    // Map the property access
+    if (prop === 'apply' || prop === 'call' || prop === 'bind') {
+      // For function calls - use animate as the default
+      return animeModule.animate[prop];
+    }
+
+    switch(prop) {
+      case 'timeline':
+        return animeModule.createTimeline;
+      case 'stagger':
+        return animeModule.stagger;
+      case 'random':
+        return animeModule.utils?.random || ((min: number, max: number) => Math.random() * (max - min) + min);
+      case 'remove':
+        return animeModule.utils?.remove || (() => {});
+      default:
+        // Default to calling animate for direct function calls
+        return animeModule.animate;
+    }
+  },
+  apply(target, thisArg, args) {
+    if (!isLoaded && typeof window !== 'undefined') {
+      animeModule = require('animejs');
+      isLoaded = true;
+    }
+
+    if (!animeModule) {
+      // Return a mock animation instance for SSR
+      return { pause: () => {}, play: () => {}, restart: () => {} };
+    }
+
+    // Call animate function directly
+    return animeModule.animate(...args);
   }
-  if (animeLib.createTimeline || animeLib.timeline) {
-    anime.timeline = animeLib.createTimeline || animeLib.timeline;
-  }
-}
+});
+
+const anime = animeProxy as typeof AnimateType & {
+  timeline: (params?: any) => any;
+  stagger: (val: number | string | any[], params?: any) => any;
+  random: (min: number, max: number) => number;
+  remove: (targets: any) => void;
+};
 
 export default anime;
 

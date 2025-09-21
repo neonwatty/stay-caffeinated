@@ -6,8 +6,6 @@ import {
   CharacterState,
   getCharacterComponent,
 } from './svg/CharacterStates';
-import { animateCharacterState } from '@/utils/animations';
-import anime from '@/lib/anime';
 
 export interface CharacterProps {
   caffeineLevel: number;
@@ -40,10 +38,6 @@ export const Character: React.FC<CharacterProps> = ({
 }) => {
   const [previousState, setPreviousState] = useState<CharacterState>('optimal');
   const characterRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<anime.AnimeInstance | null>(null);
-  const blinkAnimationRef = useRef<anime.AnimeInstance | null>(null);
-  const jitterAnimationRef = useRef<anime.AnimeInstance | null>(null);
-  const breathAnimationRef = useRef<anime.AnimeInstance | null>(null);
   const eyesRef = useRef<NodeListOf<Element> | null>(null);
 
   const currentState = useMemo((): CharacterState => {
@@ -64,54 +58,35 @@ export const Character: React.FC<CharacterProps> = ({
         onStateChange(currentState, previousState);
       }
 
-      // Apply smooth state transition animation
+      // Apply smooth state transition animation (CSS version)
       if (characterRef.current && animateTransitions) {
-        // Clean up previous animation
-        if (animationRef.current) {
-          animationRef.current.pause();
-        }
+        // Add a CSS class for smooth transitions
+        characterRef.current.style.transition = 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out';
 
-        // Transition animation between states
-        const transitionTimeline = anime.timeline({
-          easing: 'easeInOutQuad',
-        });
+        // Brief fade effect for transition
+        characterRef.current.style.opacity = '0.6';
+        characterRef.current.style.transform = 'scale(0.95)';
 
-        // Fade out current state
-        transitionTimeline
-          .add({
-            targets: characterRef.current,
-            opacity: [1, 0.6],
-            scale: [1, 0.95],
-            duration: 200,
-          })
-          // Morph to new state
-          .add({
-            targets: characterRef.current,
-            opacity: [0.6, 1],
-            scale: [0.95, 1],
-            rotate: currentState === 'over' ? [0, 5, 0] : currentState === 'under' ? [0, -3, 0] : 0,
-            duration: 300,
-            complete: () => {
-              // Map states to animation states
-              const animationStateMap: Record<CharacterState, 'sleepy' | 'normal' | 'hyper'> = {
-                'under': 'sleepy',
-                'optimal': 'normal',
-                'over': 'hyper'
-              };
+        setTimeout(() => {
+          if (characterRef.current) {
+            characterRef.current.style.opacity = '1';
+            characterRef.current.style.transform = 'scale(1)';
 
-              animationRef.current = animateCharacterState(
-                characterRef.current!,
-                animationStateMap[currentState]
-              );
+            // Add rotation for specific states
+            if (currentState === 'over') {
+              characterRef.current.style.transform = 'scale(1) rotate(2deg)';
+            } else if (currentState === 'under') {
+              characterRef.current.style.transform = 'scale(1) rotate(-1deg)';
             }
-          });
+          }
+        }, 200);
       }
 
       setPreviousState(currentState);
     }
   }, [currentState, previousState, onStateChange, animateTransitions]);
 
-  // Blinking animation for all states
+  // Blinking animation for all states (simplified CSS version)
   useEffect(() => {
     if (!characterRef.current || !animateTransitions) return;
 
@@ -122,29 +97,18 @@ export const Character: React.FC<CharacterProps> = ({
 
       eyesRef.current = eyes;
 
-      // Different blink rates for different states
-      const blinkInterval = currentState === 'under' ? 4000 : currentState === 'over' ? 800 : 2000;
-      const blinkDuration = currentState === 'under' ? 300 : currentState === 'over' ? 100 : 200;
+      // Apply CSS animation classes for blinking
+      eyes.forEach((eye) => {
+        const element = eye as HTMLElement;
+        element.style.transformOrigin = 'center';
 
-      // Clean up previous blink animation
-      if (blinkAnimationRef.current) {
-        blinkAnimationRef.current.pause();
-      }
-
-      // Create blink animation
-      blinkAnimationRef.current = anime({
-        targets: eyes,
-        scaleY: [1, 0.1, 1],
-        duration: blinkDuration,
-        easing: 'easeInOutQuad',
-        loop: true,
-        delay: (_el: unknown, i: number) => i * 50,
-        loopBegin: function() {
-          // Random delay between blinks
-          const randomDelay = Math.random() * blinkInterval + blinkInterval;
-          if (blinkAnimationRef.current) {
-            blinkAnimationRef.current.delay = randomDelay;
-          }
+        // Different animation speeds for different states
+        if (currentState === 'under') {
+          element.style.animation = 'blink 4s infinite';
+        } else if (currentState === 'over') {
+          element.style.animation = 'blink 0.8s infinite';
+        } else {
+          element.style.animation = 'blink 2s infinite';
         }
       });
     };
@@ -154,54 +118,35 @@ export const Character: React.FC<CharacterProps> = ({
 
     return () => {
       clearTimeout(timer);
-      if (blinkAnimationRef.current) {
-        blinkAnimationRef.current.pause();
+      if (eyesRef.current) {
+        eyesRef.current.forEach((eye) => {
+          const element = eye as HTMLElement;
+          element.style.animation = '';
+        });
       }
     };
   }, [currentState, animateTransitions]);
 
-  // Jittery movement for over-caffeinated state
+  // Jittery movement for over-caffeinated state (CSS version)
   useEffect(() => {
     if (!characterRef.current || !animateTransitions) return;
 
     if (currentState === 'over') {
-      // Clean up previous jitter animation
-      if (jitterAnimationRef.current) {
-        jitterAnimationRef.current.pause();
-      }
-
-      // Create jitter animation
-      jitterAnimationRef.current = anime({
-        targets: characterRef.current,
-        translateX: () => anime.random(-2, 2),
-        translateY: () => anime.random(-2, 2),
-        duration: 100,
-        easing: 'linear',
-        loop: true,
-        direction: 'alternate',
-      });
+      // Apply jitter animation class
+      characterRef.current.classList.add('animate-jitter');
     } else {
-      // Stop jitter when not over-caffeinated
-      if (jitterAnimationRef.current) {
-        jitterAnimationRef.current.pause();
-        anime({
-          targets: characterRef.current,
-          translateX: 0,
-          translateY: 0,
-          duration: 200,
-          easing: 'easeOutQuad',
-        });
-      }
+      // Remove jitter animation
+      characterRef.current.classList.remove('animate-jitter');
     }
 
     return () => {
-      if (jitterAnimationRef.current) {
-        jitterAnimationRef.current.pause();
+      if (characterRef.current) {
+        characterRef.current.classList.remove('animate-jitter');
       }
     };
   }, [currentState, animateTransitions]);
 
-  // Breathing animation for all states
+  // Breathing animation for all states (CSS version)
   useEffect(() => {
     if (!characterRef.current || !animateTransitions) return;
 
@@ -209,24 +154,17 @@ export const Character: React.FC<CharacterProps> = ({
       const body = characterRef.current?.querySelector('circle[r="50"]');
       if (!body) return;
 
+      const element = body as HTMLElement;
+      element.style.transformOrigin = 'center';
+
       // Different breathing patterns for different states
-      const breathDuration = currentState === 'under' ? 3000 : currentState === 'over' ? 800 : 1500;
-      const breathScale = currentState === 'under' ? [1, 0.98, 1] : currentState === 'over' ? [1, 1.02, 1] : [1, 1.01, 1];
-
-      // Clean up previous breath animation
-      if (breathAnimationRef.current) {
-        breathAnimationRef.current.pause();
+      if (currentState === 'under') {
+        element.style.animation = 'breathSlow 3s ease-in-out infinite';
+      } else if (currentState === 'over') {
+        element.style.animation = 'breathFast 0.8s ease-in-out infinite';
+      } else {
+        element.style.animation = 'breathNormal 1.5s ease-in-out infinite';
       }
-
-      // Create breathing animation
-      breathAnimationRef.current = anime({
-        targets: body,
-        scale: breathScale,
-        duration: breathDuration,
-        easing: 'easeInOutSine',
-        loop: true,
-        direction: 'alternate',
-      });
     };
 
     // Wait for SVG to mount
@@ -234,13 +172,15 @@ export const Character: React.FC<CharacterProps> = ({
 
     return () => {
       clearTimeout(timer);
-      if (breathAnimationRef.current) {
-        breathAnimationRef.current.pause();
+      const body = characterRef.current?.querySelector('circle[r="50"]');
+      if (body) {
+        const element = body as HTMLElement;
+        element.style.animation = '';
       }
     };
   }, [currentState, animateTransitions]);
 
-  // Additional state-specific animations
+  // Additional state-specific animations (CSS version)
   useEffect(() => {
     if (!characterRef.current || !animateTransitions) return;
 
@@ -248,63 +188,36 @@ export const Character: React.FC<CharacterProps> = ({
       // Animate Zzz for under-caffeinated
       if (currentState === 'under') {
         const zzzElements = characterRef.current?.querySelectorAll('.zzz-1, .zzz-2, .zzz-3');
-        if (zzzElements && zzzElements.length > 0) {
-          anime({
-            targets: zzzElements,
-            opacity: [0, 0.7, 0],
-            translateY: [0, -10],
-            duration: 2000,
-            delay: anime.stagger(400),
-            easing: 'easeOutQuad',
-            loop: true,
-          });
-        }
+        zzzElements?.forEach((el, i) => {
+          const element = el as HTMLElement;
+          element.style.animation = `floatUp 2s ${i * 0.4}s ease-out infinite`;
+        });
       }
 
       // Animate sparkles for optimal state
       if (currentState === 'optimal') {
         const sparkles = characterRef.current?.querySelectorAll('.sparkle-1, .sparkle-2, .sparkle-3, .sparkle-4');
-        if (sparkles && sparkles.length > 0) {
-          anime({
-            targets: sparkles,
-            opacity: [0, 0.8, 0],
-            scale: [0.5, 1.2, 0.5],
-            rotate: [0, 180, 360],
-            duration: 2000,
-            delay: anime.stagger(300),
-            easing: 'easeInOutSine',
-            loop: true,
-          });
-        }
+        sparkles?.forEach((el, i) => {
+          const element = el as HTMLElement;
+          element.style.transformOrigin = 'center';
+          element.style.animation = `sparkle 2s ${i * 0.3}s ease-in-out infinite`;
+        });
       }
 
       // Animate shake lines for over-caffeinated
       if (currentState === 'over') {
         const shakeLines = characterRef.current?.querySelectorAll('.shake-line-1, .shake-line-2, .shake-line-3, .shake-line-4, .shake-line-5, .shake-line-6');
-        if (shakeLines && shakeLines.length > 0) {
-          anime({
-            targets: shakeLines,
-            opacity: [0, 0.7, 0],
-            strokeWidth: [1, 3, 1],
-            duration: 200,
-            delay: anime.stagger(50),
-            easing: 'linear',
-            loop: true,
-          });
-        }
+        shakeLines?.forEach((el, i) => {
+          const element = el as HTMLElement;
+          element.style.animation = `shakeLine 0.2s ${i * 0.05}s linear infinite`;
+        });
 
         // Eye twitch animation
         const eyeTwitches = characterRef.current?.querySelectorAll('.eye-twitch');
-        if (eyeTwitches && eyeTwitches.length > 0) {
-          anime({
-            targets: eyeTwitches,
-            translateX: () => anime.random(-1, 1),
-            translateY: () => anime.random(-1, 1),
-            duration: 50,
-            easing: 'linear',
-            loop: true,
-          });
-        }
+        eyeTwitches?.forEach((el) => {
+          const element = el as HTMLElement;
+          element.style.animation = 'twitch 0.05s linear infinite';
+        });
       }
     };
 
@@ -313,23 +226,24 @@ export const Character: React.FC<CharacterProps> = ({
 
     return () => {
       clearTimeout(timer);
+      // Clean up animations
+      const allAnimated = characterRef.current?.querySelectorAll('.zzz-1, .zzz-2, .zzz-3, .sparkle-1, .sparkle-2, .sparkle-3, .sparkle-4, .shake-line-1, .shake-line-2, .shake-line-3, .shake-line-4, .shake-line-5, .shake-line-6, .eye-twitch');
+      allAnimated?.forEach((el) => {
+        const element = el as HTMLElement;
+        element.style.animation = '';
+      });
     };
   }, [currentState, animateTransitions]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        animationRef.current.pause();
-      }
-      if (blinkAnimationRef.current) {
-        blinkAnimationRef.current.pause();
-      }
-      if (jitterAnimationRef.current) {
-        jitterAnimationRef.current.pause();
-      }
-      if (breathAnimationRef.current) {
-        breathAnimationRef.current.pause();
+      // Clean up any remaining CSS animations
+      if (characterRef.current) {
+        characterRef.current.style.animation = '';
+        characterRef.current.style.transition = '';
+        characterRef.current.style.transform = '';
+        characterRef.current.style.opacity = '';
       }
     };
   }, []);
