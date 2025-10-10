@@ -33,7 +33,7 @@ export const HealthBar: React.FC<HealthBarProps> = ({
   const barRef = useRef<HTMLDivElement>(null);
   const heartRef = useRef<SVGSVGElement>(null);
   const prevValueRef = useRef(value);
-  const warningAnimationRef = useRef<anime.AnimeInstance | null>(null);
+  const warningAnimationRef = useRef<{ pause: () => void; play?: () => void; restart?: () => void } | null>(null);
 
   // Determine health status
   const status = useMemo(() => {
@@ -50,8 +50,7 @@ export const HealthBar: React.FC<HealthBarProps> = ({
   useEffect(() => {
     if (status.pulse && showHeartbeat && heartRef.current) {
       // Use anime.js for smoother heartbeat
-      const heartbeatAnimation = anime({
-        targets: heartRef.current,
+      const heartbeatAnimation = anime(heartRef.current, {
         scale: [1, 1.3, 1],
         duration: 600,
         easing: 'easeInOutQuad',
@@ -79,8 +78,7 @@ export const HealthBar: React.FC<HealthBarProps> = ({
         warningAnimationRef.current.pause();
       }
 
-      warningAnimationRef.current = anime({
-        targets: barRef.current,
+      warningAnimationRef.current = anime(barRef.current, {
         backgroundColor: [
           { value: 'rgba(239, 68, 68, 0.2)', duration: 100 },
           { value: 'transparent', duration: 400 }
@@ -94,8 +92,7 @@ export const HealthBar: React.FC<HealthBarProps> = ({
 
     // Critical health warning animation
     if (value <= criticalThreshold && value < prevValueRef.current) {
-      const criticalAnimation = anime({
-        targets: barRef.current,
+      const criticalAnimation = anime(barRef.current, {
         translateX: [0, -2, 2, -2, 2, 0],
         duration: 400,
         easing: 'easeInOutQuad',
@@ -103,8 +100,7 @@ export const HealthBar: React.FC<HealthBarProps> = ({
 
       // Screen edge glow for critical health
       if (value < 10) {
-        anime({
-          targets: barRef.current,
+        anime(barRef.current, {
           boxShadow: [
             { value: '0 0 20px rgba(239, 68, 68, 0.5)', duration: 200 },
             { value: '0 0 40px rgba(239, 68, 68, 0.8)', duration: 200 },

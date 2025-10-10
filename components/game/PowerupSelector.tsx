@@ -39,8 +39,7 @@ const PowerupItem: React.FC<PowerupItemProps> = ({
       onClick();
 
       // Animate activation
-      anime({
-        targets: `.powerup-${powerupId}`,
+      anime(`.powerup-${powerupId}`, {
         scale: [1, 1.2, 1],
         rotate: '1turn',
         duration: 600,

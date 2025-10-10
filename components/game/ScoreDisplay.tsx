@@ -30,7 +30,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   const [previousScore, setPreviousScore] = useState(0);
   const scoreRef = useRef<HTMLDivElement>(null);
   const multiplierRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<anime.AnimeInstance | null>(null);
+  const animationRef = useRef<{ pause: () => void; play?: () => void; restart?: () => void } | null>(null);
 
   // Animate score changes
   useEffect(() => {
@@ -44,8 +44,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
     }
 
     const scoreObj = { score: displayScore };
-    animationRef.current = anime({
-      targets: scoreObj,
+    animationRef.current = anime(scoreObj, {
       score: currentScore,
       duration: 500,
       easing: 'easeOutQuad',
@@ -59,8 +58,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 
     // Pulse effect on score increase
     if (currentScore > previousScore && scoreRef.current) {
-      anime({
-        targets: scoreRef.current,
+      anime(scoreRef.current, {
         scale: [1, 1.1, 1],
         duration: 300,
         easing: 'easeOutElastic(1, .8)',
@@ -77,8 +75,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   // Animate multiplier changes
   useEffect(() => {
     if (multiplier > 1 && multiplierRef.current) {
-      anime({
-        targets: multiplierRef.current,
+      anime(multiplierRef.current, {
         scale: [0.8, 1.2, 1],
         rotate: [0, 5, -5, 0],
         duration: 600,
@@ -185,8 +182,7 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
 
   useEffect(() => {
     if (isOpen && modalRef.current) {
-      anime({
-        targets: modalRef.current,
+      anime(modalRef.current, {
         opacity: [0, 1],
         scale: [0.9, 1],
         duration: 300,
@@ -418,14 +414,15 @@ export const ScorePopup: React.FC<ScorePopupProps> = ({
 
   useEffect(() => {
     if (popupRef.current) {
-      anime({
-        targets: popupRef.current,
+      anime(popupRef.current, {
         translateY: [-20, -80],
         opacity: [1, 0],
         scale: [0.5, 1.2, 1],
         duration: 1500,
         easing: 'easeOutQuad',
-        complete: onComplete,
+        complete: () => {
+          onComplete?.();
+        },
       });
     }
   }, [onComplete]);

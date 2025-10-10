@@ -85,13 +85,12 @@ export function applyScreenShake(
   target: HTMLElement,
   intensity: number,
   duration: number = 500
-): anime.AnimeInstance | undefined {
+): { pause: () => void; play?: () => void; restart?: () => void } | undefined {
   if (!anime || intensity === 0) return;
 
   const shakeIntensity = intensity * 10; // Scale for visible effect
 
-  return anime({
-    targets: target,
+  return anime(target, {
     translateX: [
       { value: shakeIntensity, duration: duration * 0.1 },
       { value: -shakeIntensity * 0.8, duration: duration * 0.1 },
@@ -119,7 +118,7 @@ export function applyBlurEffect(
   target: HTMLElement,
   intensity: number,
   duration: number = 300
-): anime.AnimeInstance | undefined {
+): { pause: () => void; play?: () => void; restart?: () => void } | undefined {
   if (!anime || intensity === 0) {
     target.style.filter = 'none';
     return;
@@ -127,8 +126,7 @@ export function applyBlurEffect(
 
   const blurAmount = intensity * 5; // Convert to pixels
 
-  return anime({
-    targets: target,
+  return anime(target, {
     filter: `blur(${blurAmount}px)`,
     duration: duration,
     easing: 'easeInOutQuad',
@@ -197,11 +195,10 @@ export function applyGlitchEffect(
   target: HTMLElement,
   intensity: number,
   duration: number = 100
-): anime.AnimeInstance | undefined {
+): { pause: () => void; play?: () => void; restart?: () => void } | undefined {
   if (!anime || intensity === 0) return;
 
-  return anime({
-    targets: target,
+  return anime(target, {
     keyframes: [
       { translateX: intensity * 5, translateY: intensity * 2, duration: duration * 0.2 },
       { translateX: -intensity * 3, translateY: -intensity * 4, duration: duration * 0.2 },
@@ -218,13 +215,12 @@ export function applyGlitchEffect(
 export function applyContinuousJitter(
   target: HTMLElement,
   intensity: number
-): anime.AnimeInstance | undefined {
+): { pause: () => void; play?: () => void; restart?: () => void } | undefined {
   if (!anime || intensity === 0) return;
 
   const jitterAmount = intensity * 2;
 
-  return anime({
-    targets: target,
+  return anime(target, {
     translateX: () => anime.random(-jitterAmount, jitterAmount),
     translateY: () => anime.random(-jitterAmount, jitterAmount),
     duration: 50,

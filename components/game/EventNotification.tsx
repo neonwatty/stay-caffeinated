@@ -51,8 +51,7 @@ export default function EventNotification({
 
     // Create entrance animation
     if (activeEvent) {
-      animationRef.current = anime({
-        targets: notificationRef.current,
+      animationRef.current = anime(notificationRef.current, {
         translateY: ['-100%', '0%'],
         opacity: [0, 1],
         duration: 500,
@@ -61,8 +60,7 @@ export default function EventNotification({
 
       // Animate icon
       if (iconRef.current) {
-        anime({
-          targets: iconRef.current,
+        anime(iconRef.current, {
           rotate: [0, 360],
           scale: [0, 1],
           duration: 600,
@@ -72,8 +70,7 @@ export default function EventNotification({
       }
     } else {
       // Exit animation
-      animationRef.current = anime({
-        targets: notificationRef.current,
+      animationRef.current = anime(notificationRef.current, {
         translateY: ['0%', '-120%'],
         opacity: [1, 0],
         duration: 400,
@@ -99,8 +96,7 @@ export default function EventNotification({
 
     const duration = activeEvent.endTime - activeEvent.startTime;
 
-    progressAnimationRef.current = anime({
-      targets: progressRef.current,
+    progressAnimationRef.current = anime(progressRef.current, {
       width: ['100%', '0%'],
       duration: duration,
       easing: 'linear'

@@ -63,15 +63,13 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
     // Critical health pulse and flash
     if (healthLevel < 20 && healthLevel < prevHealthRef.current) {
       // Container flash animation
-      const flashAnimation = anime.timeline({
-        targets: containerRef.current,
-      })
-      .add({
+      const flashAnimation = anime.timeline()
+      .add(containerRef.current, {
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         duration: 200,
         easing: 'easeOutQuad',
       })
-      .add({
+      .add(containerRef.current, {
         backgroundColor: 'transparent',
         duration: 400,
         easing: 'easeInQuad',
@@ -79,8 +77,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
 
       // Add border pulse for extreme critical (< 10%)
       if (healthLevel < 10) {
-        anime({
-          targets: containerRef.current,
+        anime(containerRef.current, {
           borderColor: ['rgba(239, 68, 68, 0)', 'rgba(239, 68, 68, 0.8)', 'rgba(239, 68, 68, 0)'],
           borderWidth: ['0px', '2px', '0px'],
           duration: 600,
@@ -105,8 +102,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
 
       // Jitter animation for extreme over-caffeination
       if (caffeineLevel > 95) {
-        anime({
-          targets: containerRef.current,
+        anime(containerRef.current, {
           rotate: [0, -1, 1, -1, 0],
           duration: 200,
           easing: 'easeInOutQuad',
@@ -117,8 +113,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
 
     // Under-caffeination drowsy effect
     if (caffeineLevel < 15 && caffeineLevel < prevCaffeineRef.current) {
-      anime({
-        targets: containerRef.current,
+      anime(containerRef.current, {
         opacity: [1, 0.7, 1],
         duration: 2000,
         easing: 'easeInOutSine',
@@ -136,8 +131,7 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
     if (inOptimalZone && !prevCaffeineRef.current) {
       // Entering optimal zone animation
       if (optimalIndicatorRef.current) {
-        anime({
-          targets: optimalIndicatorRef.current,
+        anime(optimalIndicatorRef.current, {
           scale: [0.8, 1.1, 1],
           opacity: [0, 1],
           duration: 600,
@@ -312,8 +306,7 @@ export const OptimalZoneIndicator: React.FC<OptimalZoneIndicatorProps> = ({
 
     // Entering optimal zone
     if (isInZone && !prevInZoneRef.current) {
-      anime({
-        targets: indicatorRef.current,
+      anime(indicatorRef.current, {
         scale: [0.9, 1.05, 1],
         backgroundColor: ['#86efac', '#10b981', '#86efac'],
         duration: 800,
@@ -323,8 +316,7 @@ export const OptimalZoneIndicator: React.FC<OptimalZoneIndicatorProps> = ({
 
     // Leaving optimal zone
     if (!isInZone && prevInZoneRef.current) {
-      anime({
-        targets: indicatorRef.current,
+      anime(indicatorRef.current, {
         scale: [1, 0.95, 1],
         backgroundColor: ['#9ca3af', '#6b7280'],
         duration: 400,

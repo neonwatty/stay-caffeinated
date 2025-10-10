@@ -38,7 +38,7 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
   const [isVisible, setIsVisible] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<anime.AnimeInstance | null>(null);
+  const animationRef = useRef<{ pause: () => void; play?: () => void; restart?: () => void } | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const getPositionClasses = () => {
@@ -57,8 +57,7 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
   const hideNotification = useCallback(() => {
     if (!notificationRef.current) return;
 
-    anime({
-      targets: notificationRef.current,
+    anime(notificationRef.current, {
       translateY: position === 'bottom' ? 100 : -100,
       opacity: 0,
       scale: 0.8,
@@ -78,8 +77,7 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
     setIsVisible(true);
 
     // Entrance animation
-    animationRef.current = anime({
-      targets: notificationRef.current,
+    animationRef.current = anime(notificationRef.current, {
       translateY: position === 'bottom' ? [100, 0] : [-100, 0],
       opacity: [0, 1],
       scale: [0.8, 1],
@@ -87,9 +85,8 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
       easing: 'easeOutExpo',
       complete: () => {
         // Add glow effect for rare achievements
-        if (['epic', 'legendary'].includes(currentAchievement.rarity)) {
-          anime({
-            targets: notificationRef.current,
+        if (['epic', 'legendary'].includes(currentAchievement.rarity) && notificationRef.current) {
+          anime(notificationRef.current, {
             boxShadow: [
               `0 0 20px ${RARITY_GLOW[currentAchievement.rarity]}`,
               `0 0 40px ${RARITY_GLOW[currentAchievement.rarity]}`,

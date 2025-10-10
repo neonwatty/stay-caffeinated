@@ -10,8 +10,7 @@ export default function AnimeTest() {
     if (!boxRef.current || !anime) return;
 
     // Simple animation test
-    const animation = anime({
-      targets: boxRef.current,
+    const animation = anime(boxRef.current, {
       translateX: 250,
       rotate: '1turn',
       backgroundColor: '#10b981',

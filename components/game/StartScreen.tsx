@@ -85,8 +85,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const handleStartGame = () => {
     // Animate the menu closing before starting the game
     if (menuRef.current) {
-      anime({
-        targets: menuRef.current,
+      anime(menuRef.current, {
         scale: [1, 1.1, 0],
         opacity: [1, 0],
         duration: 500,

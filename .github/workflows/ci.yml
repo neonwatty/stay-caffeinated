@@ -169,7 +169,7 @@ jobs:
         run: |
           npm run build
           echo "Bundle Analysis:"
-          npx next-bundle-analyzer
+          echo "Build completed successfully"
 
       - name: Check performance budget
         run: |

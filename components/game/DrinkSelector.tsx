@@ -133,8 +133,7 @@ export const DrinkSelector: React.FC<DrinkSelectorProps> = ({
       document.body.appendChild(clone);
 
       // Animate the clone
-      anime({
-        targets: clone,
+      anime(clone, {
         scale: [1, 1.5, 0],
         opacity: [1, 0.8, 0],
         translateY: -50,

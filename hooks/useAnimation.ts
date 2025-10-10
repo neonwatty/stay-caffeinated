@@ -13,11 +13,11 @@ export function useAnimation<T extends HTMLElement>(
   options: AnimationOptions = {}
 ) {
   const targetRef = useRef<T>(null);
-  const animationRef = useRef<anime.AnimeInstance | null>(null);
+  const animationRef = useRef<{ pause: () => void; play?: () => void; restart?: () => void; reverse?: () => void; seek?: (time: number) => void } | null>(null);
 
   const play = useCallback(() => {
     if (animationRef.current) {
-      animationRef.current.play();
+      animationRef.current.play?.();
     }
   }, []);
 
@@ -29,19 +29,19 @@ export function useAnimation<T extends HTMLElement>(
 
   const restart = useCallback(() => {
     if (animationRef.current) {
-      animationRef.current.restart();
+      animationRef.current.restart?.();
     }
   }, []);
 
   const reverse = useCallback(() => {
     if (animationRef.current) {
-      animationRef.current.reverse();
+      animationRef.current.reverse?.();
     }
   }, []);
 
   const seek = useCallback((time: number) => {
     if (animationRef.current) {
-      animationRef.current.seek(time);
+      animationRef.current.seek?.(time);
     }
   }, []);
 
@@ -50,8 +50,7 @@ export function useAnimation<T extends HTMLElement>(
 
     const { autoplay = true, ...animeOptions } = options;
 
-    animationRef.current = anime({
-      targets: targetRef.current,
+    animationRef.current = anime(targetRef.current, {
       autoplay,
       ...animeOptions,
     });
@@ -140,7 +139,7 @@ export function useScrollAnimation<T extends HTMLElement>(
   } = {}
 ) {
   const targetRef = useRef<T>(null);
-  const animationRef = useRef<anime.AnimeInstance | null>(null);
+  const animationRef = useRef<{ pause: () => void; play?: () => void; restart?: () => void; reverse?: () => void; seek?: (time: number) => void } | null>(null);
   const hasTriggered = useRef(false);
 
   useEffect(() => {
@@ -158,12 +157,11 @@ export function useScrollAnimation<T extends HTMLElement>(
 
       if (rect.top <= triggerPoint) {
         if (!animationRef.current) {
-          animationRef.current = anime({
-            targets: targetRef.current,
+          animationRef.current = anime(targetRef.current, {
             ...options,
           });
         } else {
-          animationRef.current.play();
+          animationRef.current.play?.();
         }
         hasTriggered.current = true;
       }

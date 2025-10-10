@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 // Anime.js v4 wrapper for Next.js/TypeScript
 import type { animate as AnimateType } from 'animejs';

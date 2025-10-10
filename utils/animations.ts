@@ -33,8 +33,7 @@ export function animateCaffeineBar(
   const color = isOptimal ? '#10b981' : level > 70 ? '#f59e0b' : '#ef4444';
 
   if (!anime) return;
-  return anime({
-    targets: target,
+  return anime(target, {
     width: `${level}%`,
     backgroundColor: color,
     duration: DURATIONS.normal,
@@ -47,8 +46,7 @@ export function animateCaffeineBar(
  */
 export function animateHealthDamage(target: HTMLElement) {
   if (!anime) return;
-  return anime({
-    targets: target,
+  return anime(target, {
     scale: [1, 0.95, 1],
     backgroundColor: ['#dc2626', '#ef4444', '#dc2626'],
     duration: DURATIONS.fast,
@@ -61,8 +59,7 @@ export function animateHealthDamage(target: HTMLElement) {
  */
 export function screenShake(target: HTMLElement, intensity: number = 5) {
   if (!anime) return;
-  return anime({
-    targets: target,
+  return anime(target, {
     translateX: anime?.random ? anime.random(-intensity, intensity) : Math.random() * intensity * 2 - intensity,
     translateY: anime?.random ? anime.random(-intensity, intensity) : Math.random() * intensity * 2 - intensity,
     duration: DURATIONS.instant,
@@ -105,8 +102,7 @@ export function animateCharacterState(
   };
 
   if (!anime) return;
-  return anime({
-    targets: target,
+  return anime(target, {
     ...animations[state],
   });
 }
@@ -124,14 +120,12 @@ export function animateDrinkConsumption(
   });
 
   timeline
-    .add({
-      targets: drinkElement,
+    .add(drinkElement, {
       scale: [1, 1.2, 0],
       opacity: [1, 1, 0],
       duration: DURATIONS.normal,
     })
-    .add({
-      targets: targetElement,
+    .add(targetElement, {
       scale: [1, 1.1, 1],
       duration: DURATIONS.fast,
     }, '-=200');
@@ -144,8 +138,7 @@ export function animateDrinkConsumption(
  */
 export function animatePowerUp(target: HTMLElement) {
   if (!anime) return;
-  return anime({
-    targets: target,
+  return anime(target, {
     scale: [0, 1.2, 1],
     rotate: '1turn',
     duration: DURATIONS.normal,
@@ -163,13 +156,11 @@ export function animateGameOver(target: HTMLElement) {
   });
 
   timeline
-    .add({
-      targets: target,
+    .add(target, {
       scale: [1, 1.1],
       duration: DURATIONS.fast,
     })
-    .add({
-      targets: target,
+    .add(target, {
       rotate: anime?.random ? anime.random(-45, 45) : Math.random() * 90 - 45,
       translateY: '100vh',
       duration: DURATIONS.slow,
@@ -184,8 +175,7 @@ export function animateGameOver(target: HTMLElement) {
  */
 export function animateSuccess(targets: NodeListOf<HTMLElement> | HTMLElement[]) {
   if (!anime) return;
-  return anime({
-    targets,
+  return anime(targets, {
     translateY: [0, -30, 0],
     scale: [1, 1.2, 1],
     rotate: anime?.stagger ? anime.stagger([0, 360]) : 180,
@@ -252,8 +242,7 @@ export function createParticleExplosion(
   // Add all particles at once
   container.appendChild(fragment);
 
-  const animation = anime({
-    targets: particles,
+  const animation = anime(particles, {
     translateX: () => anime?.random ? anime.random(-spread, spread) : Math.random() * spread * 2 - spread,
     translateY: () => anime?.random ? anime.random(-spread, spread) : Math.random() * spread * 2 - spread,
     scale: [1, 0],
@@ -274,13 +263,10 @@ export function createParticleExplosion(
 /**
  * Cleanup utility for animations
  */
-export function cleanupAnimation(animation: anime.AnimeInstance | null) {
+export function cleanupAnimation(animation: { pause: () => void; play?: () => void; restart?: () => void } | null) {
   if (animation) {
     animation.pause();
-    if (animation.animatables) {
-      animation.animatables.forEach(animatable => {
-        anime?.remove(animatable.target);
-      });
-    }
+    // Note: anime.animatables is not available in anime.js v4
+    // The pause() call should be sufficient to stop the animation
   }
 }

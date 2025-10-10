@@ -76,8 +76,9 @@ class AnimationPerformanceMonitor {
 
     this.metrics.totalFrames++;
 
-    // Count running animations
-    this.metrics.animationsRunning = anime.running.length;
+    // Count running animations (anime.running is not available in v4)
+    // this.metrics.animationsRunning = anime.running.length;
+    this.metrics.animationsRunning = 0; // TODO: Track manually if needed
 
     this.lastTime = now;
     this.rafId = requestAnimationFrame(this.monitorFrame);
@@ -86,7 +87,7 @@ class AnimationPerformanceMonitor {
   /**
    * Track animation duration
    */
-  trackAnimation(animation: anime.AnimeInstance): void {
+  trackAnimation(animation: { pause: () => void; play?: () => void; restart?: () => void; complete?: (anim: unknown) => void }): void {
     const startTime = performance.now();
 
     const originalComplete = animation.complete;
@@ -131,10 +132,11 @@ class AnimationPerformanceMonitor {
   autoAdjustQuality(): void {
     if (!this.isPerformanceOptimal()) {
       // Reduce animation quality
-      anime.speed = 1.5; // Speed up animations
-      console.warn('Animation performance degraded. Adjusting quality.');
+      // anime.speed = 1.5; // Speed up animations (not available in anime.js v4)
+      // TODO: Implement custom speed adjustment if needed
+      console.warn('Animation performance degraded. Consider adjusting quality.');
     } else {
-      anime.speed = 1; // Normal speed
+      // anime.speed = 1; // Normal speed (not available in anime.js v4)
     }
   }
 
@@ -157,9 +159,14 @@ const performanceMonitor = new AnimationPerformanceMonitor();
 
 /**
  * Create a performance-monitored animation
+ * @param targets - The animation target(s)
+ * @param params - Animation parameters (without targets)
  */
-export function createMonitoredAnimation(params: anime.AnimeParams): anime.AnimeInstance {
-  const animation = anime(params);
+export function createMonitoredAnimation(
+  targets: HTMLElement | string | NodeList | HTMLElement[],
+  params: Omit<anime.AnimeParams, 'targets'>
+): { pause: () => void; play?: () => void; restart?: () => void } {
+  const animation = anime(targets, params);
   performanceMonitor.trackAnimation(animation);
   return animation;
 }

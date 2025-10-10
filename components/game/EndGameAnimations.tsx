@@ -45,8 +45,7 @@ const VictoryAnimation: React.FC<{
     }
 
     // Animate confetti falling
-    anime({
-      targets: confettiRefs.current,
+    anime(confettiRefs.current, {
       translateY: [
         { value: '100vh', duration: 3000 }
       ],
@@ -63,8 +62,7 @@ const VictoryAnimation: React.FC<{
 
     // Animate victory text
     if (textRef.current) {
-      anime({
-        targets: textRef.current,
+      anime(textRef.current, {
         scale: [0, 1.2, 1],
         opacity: [0, 1],
         duration: 1000,
@@ -72,8 +70,7 @@ const VictoryAnimation: React.FC<{
       });
 
       // Add glow effect
-      anime({
-        targets: textRef.current,
+      anime(textRef.current, {
         textShadow: [
           '0 0 10px #FFD700',
           '0 0 30px #FFD700',
@@ -87,8 +84,7 @@ const VictoryAnimation: React.FC<{
 
     // Animate stats display
     if (statsRef.current) {
-      anime({
-        targets: statsRef.current,
+      anime(statsRef.current, {
         translateY: [50, 0],
         opacity: [0, 1],
         duration: 800,
@@ -169,8 +165,7 @@ const PassOutAnimation: React.FC<{
     });
 
     // Screen wobble
-    timeline.add({
-      targets: containerRef.current,
+    timeline.add(containerRef.current, {
       rotate: [0, -5, 5, -3, 3, 0],
       scale: [1, 0.98, 1],
       duration: 1500,
@@ -178,8 +173,7 @@ const PassOutAnimation: React.FC<{
 
     // Blur and darken
     if (overlayRef.current) {
-      timeline.add({
-        targets: overlayRef.current,
+      timeline.add(overlayRef.current, {
         opacity: [0, 0.8],
         duration: 2000,
       }, '-=1000');
@@ -187,14 +181,12 @@ const PassOutAnimation: React.FC<{
 
     // Eyelids closing
     if (eyeLidTop.current && eyeLidBottom.current) {
-      timeline.add({
-        targets: eyeLidTop.current,
+      timeline.add(eyeLidTop.current, {
         translateY: ['0%', '50%'],
         duration: 2000,
       }, '-=1000');
 
-      timeline.add({
-        targets: eyeLidBottom.current,
+      timeline.add(eyeLidBottom.current, {
         translateY: ['0%', '-50%'],
         duration: 2000,
       }, '-=2000');
@@ -202,8 +194,7 @@ const PassOutAnimation: React.FC<{
 
     // Text fade in
     if (textRef.current) {
-      timeline.add({
-        targets: textRef.current,
+      timeline.add(textRef.current, {
         opacity: [0, 1],
         scale: [0.8, 1],
         duration: 800,
@@ -211,8 +202,7 @@ const PassOutAnimation: React.FC<{
     }
 
     // Final fade to black
-    timeline.add({
-      targets: containerRef.current,
+    timeline.add(containerRef.current, {
       opacity: [1, 0],
       duration: 1000,
       delay: 1000,
@@ -295,16 +285,14 @@ const ExplosionAnimation: React.FC<{
 
     // Flash effect
     if (flashRef.current) {
-      timeline.add({
-        targets: flashRef.current,
+      timeline.add(flashRef.current, {
         opacity: [0, 1, 0],
         duration: 200,
       });
     }
 
     // Screen shake
-    timeline.add({
-      targets: containerRef.current,
+    timeline.add(containerRef.current, {
       translateX: () => anime.random(-20, 20),
       translateY: () => anime.random(-20, 20),
       duration: 500,
@@ -314,8 +302,7 @@ const ExplosionAnimation: React.FC<{
 
     // Central explosion
     if (explosionRef.current) {
-      timeline.add({
-        targets: explosionRef.current,
+      timeline.add(explosionRef.current, {
         scale: [0, 3],
         opacity: [1, 0],
         duration: 600,
@@ -324,8 +311,7 @@ const ExplosionAnimation: React.FC<{
     }
 
     // Particles explosion
-    timeline.add({
-      targets: particlesRef.current,
+    timeline.add(particlesRef.current, {
       translateX: () => anime.random(-300, 300),
       translateY: () => anime.random(-300, 300),
       scale: [1, 0],
@@ -336,8 +322,7 @@ const ExplosionAnimation: React.FC<{
 
     // Text appearance
     if (textRef.current) {
-      timeline.add({
-        targets: textRef.current,
+      timeline.add(textRef.current, {
         opacity: [0, 1],
         scale: [1.5, 1],
         duration: 800,
@@ -345,8 +330,7 @@ const ExplosionAnimation: React.FC<{
       }, '-=500');
 
       // Add pulsing effect to text
-      timeline.add({
-        targets: textRef.current,
+      timeline.add(textRef.current, {
         scale: [1, 1.05, 1],
         duration: 1000,
         loop: 2,
@@ -355,8 +339,7 @@ const ExplosionAnimation: React.FC<{
     }
 
     // Fade out
-    timeline.add({
-      targets: containerRef.current,
+    timeline.add(containerRef.current, {
       opacity: [1, 0],
       duration: 1000,
       delay: 1000,
@@ -466,8 +449,7 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
 
   useEffect(() => {
     if (isOpen && modalRef.current) {
-      anime({
-        targets: modalRef.current,
+      anime(modalRef.current, {
         scale: [0.9, 1],
         opacity: [0, 1],
         duration: 400,

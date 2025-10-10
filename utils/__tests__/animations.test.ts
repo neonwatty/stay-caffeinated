@@ -392,7 +392,7 @@ describe('Animation Utilities', () => {
         ],
       };
 
-      cleanupAnimation(mockCleanupAnimation as anime.AnimeInstance);
+      cleanupAnimation(mockCleanupAnimation as { pause: () => void; play?: () => void; restart?: () => void });
 
       expect(mockCleanupAnimation.pause).toHaveBeenCalled();
       expect(animeMock.remove).toHaveBeenCalledWith(target1);
@@ -409,7 +409,7 @@ describe('Animation Utilities', () => {
         animatables: undefined,
       };
 
-      expect(() => cleanupAnimation(mockCleanupAnimation as anime.AnimeInstance)).not.toThrow();
+      expect(() => cleanupAnimation(mockCleanupAnimation as { pause: () => void; play?: () => void; restart?: () => void })).not.toThrow();
       expect(mockCleanupAnimation.pause).toHaveBeenCalled();
     });
   });

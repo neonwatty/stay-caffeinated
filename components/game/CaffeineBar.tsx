@@ -59,18 +59,19 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
 
     // Animate the bar fill on value change
     if (Math.abs(value - prevValueRef.current) > 1) {
-      anime({
-        targets: barRef.current.querySelector('.progress-fill'),
-        width: `${value}%`,
-        duration: 600,
-        easing: 'easeInOutQuad',
-      });
+      const fillElement = barRef.current.querySelector('.progress-fill');
+      if (fillElement) {
+        anime(fillElement, {
+          width: `${value}%`,
+          duration: 600,
+          easing: 'easeInOutQuad',
+        });
+      }
     }
 
     // Pulsing animation for danger zones
     if (status.pulse && barRef.current) {
-      const pulseAnimation = anime({
-        targets: barRef.current,
+      const pulseAnimation = anime(barRef.current, {
         scale: [1, 1.02, 1],
         duration: 800,
         easing: 'easeInOutSine',
@@ -88,8 +89,7 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
 
     // Shake animation when entering danger zone
     if (status.shake && value !== prevValueRef.current && barRef.current) {
-      anime({
-        targets: barRef.current,
+      anime(barRef.current, {
         translateX: [0, -3, 3, -3, 0],
         duration: 300,
         easing: 'easeInOutQuad',
@@ -106,8 +106,7 @@ export const CaffeineBar: React.FC<CaffeineBarProps> = ({
     const isInOptimalZone = value >= optimalMin && value <= optimalMax;
 
     if (isInOptimalZone) {
-      const glowAnimation = anime({
-        targets: optimalZoneRef.current,
+      const glowAnimation = anime(optimalZoneRef.current, {
         opacity: [0.2, 0.4, 0.2],
         duration: 2000,
         easing: 'easeInOutSine',

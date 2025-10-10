@@ -46,10 +46,10 @@ export const ScreenEffects: React.FC<ScreenEffectsProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [effects, setEffects] = useState<CompositeEffect>(calculateCompositeEffect(caffeineLevel));
   const animationRefs = useRef<{
-    shake?: anime.AnimeInstance;
-    blur?: anime.AnimeInstance;
-    glitch?: anime.AnimeInstance;
-    jitter?: anime.AnimeInstance;
+    shake?: { pause: () => void; play?: () => void; restart?: () => void };
+    blur?: { pause: () => void; play?: () => void; restart?: () => void };
+    glitch?: { pause: () => void; play?: () => void; restart?: () => void };
+    jitter?: { pause: () => void; play?: () => void; restart?: () => void };
   }>({});
 
   // Calculate composite effects based on caffeine level
@@ -317,7 +317,7 @@ export const EffectOverlay: React.FC<EffectOverlayProps> = ({
   useEffect(() => {
     if (!overlayRef.current || !isActive || intensity === 0) return;
 
-    let animation: anime.AnimeInstance | undefined;
+    let animation: { pause: () => void; play?: () => void; restart?: () => void } | undefined;
 
     switch (effectType) {
       case 'blur':

@@ -103,7 +103,7 @@ export const ParticleEffects: React.FC<ParticleEffectsProps> = ({
   containerRef,
 }) => {
   const particlesRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<anime.AnimeInstance | null>(null);
+  const animationRef = useRef<{ pause: () => void; play?: () => void; restart?: () => void } | null>(null);
   const particleElementsRef = useRef<HTMLElement[]>([]);
 
   // Merge default config with custom config
@@ -170,11 +170,19 @@ export const ParticleEffects: React.FC<ParticleEffectsProps> = ({
     const timeline = anime.timeline({
       easing: 'easeOutQuad',
       complete: () => {
-        if (!particleConfig.loop) {
+        if (particleConfig.loop && active) {
+          // Recreate particles for loop
+          const newParticles = createParticles();
+          if (newParticles) {
+            animateParticles(newParticles);
+          }
+        } else {
           particles.forEach(p => p.remove());
           particleElementsRef.current = [];
         }
-        onComplete?.();
+        if (!particleConfig.loop) {
+          onComplete?.();
+        }
       },
     });
 
@@ -252,17 +260,7 @@ export const ParticleEffects: React.FC<ParticleEffectsProps> = ({
 
     animationRef.current = timeline;
 
-    // Loop animation if configured
-    if (particleConfig.loop && animationRef.current) {
-      animationRef.current.finished.then(() => {
-        if (active) {
-          const newParticles = createParticles();
-          if (newParticles) {
-            animateParticles(newParticles);
-          }
-        }
-      });
-    }
+    // Note: Loop handling is done through the timeline complete callback above
   }, [type, particleConfig, active, onComplete, createParticles]);
 
   // Initialize particles
