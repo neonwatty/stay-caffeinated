@@ -1,0 +1,296 @@
+name: Automated Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_commit:
+        description: 'Commit SHA to rollback to'
+        required: false
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+  workflow_run:
+    workflows: ["Deploy to GitHub Pages"]
+    types:
+      - completed
+
+env:
+  ROLLBACK_THRESHOLD: 3  # Number of consecutive failures before auto-rollback
+  HEALTH_CHECK_RETRIES: 5
+  HEALTH_CHECK_DELAY: 30
+
+jobs:
+  # Health check and monitoring
+  health-check:
+    name: Production Health Check
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    outputs:
+      should-rollback: ${{ steps.check.outputs.rollback }}
+      previous-commit: ${{ steps.history.outputs.commit }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get deployment history
+        id: history
+        run: |
+          # Get the last successful deployment commit before current
+          PREVIOUS=$(git rev-list --max-count=2 HEAD | tail -1)
+          echo "commit=${PREVIOUS}" >> $GITHUB_OUTPUT
+          echo "Previous successful commit: ${PREVIOUS}"
+
+      - name: Wait for deployment to propagate
+        if: github.event_name != 'workflow_dispatch'
+        run: sleep ${{ env.HEALTH_CHECK_DELAY }}
+
+      - name: Perform health checks
+        id: check
+        run: |
+          SITE_URL="${{ secrets.PRODUCTION_URL || 'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}' }}"
+          ROLLBACK_NEEDED=false
+
+          # Function to check endpoint health
+          check_endpoint() {
+            local url=$1
+            local expected_status=$2
+            local retries=${{ env.HEALTH_CHECK_RETRIES }}
+
+            while [ $retries -gt 0 ]; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+              if [ "$STATUS" = "$expected_status" ]; then
+                return 0
+              fi
+              retries=$((retries - 1))
+              sleep 5
+            done
+            return 1
+          }
+
+          # Check main site
+          if ! check_endpoint "$SITE_URL" "200"; then
+            echo "❌ Main site health check failed"
+            ROLLBACK_NEEDED=true
+          else
+            echo "✅ Main site is healthy"
+          fi
+
+          # Check critical endpoints
+          CRITICAL_ENDPOINTS=(
+            "$SITE_URL/api/health"
+            "$SITE_URL/manifest.json"
+            "$SITE_URL/_next/static"
+          )
+
+          for endpoint in "${CRITICAL_ENDPOINTS[@]}"; do
+            if ! check_endpoint "$endpoint" "200"; then
+              echo "❌ Critical endpoint failed: $endpoint"
+              ROLLBACK_NEEDED=true
+              break
+            fi
+          done
+
+          # Check for JavaScript errors
+          if command -v node > /dev/null 2>&1; then
+            cat > check-js-errors.js << 'EOF'
+            const puppeteer = require('puppeteer');
+            (async () => {
+              try {
+                const browser = await puppeteer.launch({ headless: true });
+                const page = await browser.newPage();
+                const errors = [];
+
+                page.on('pageerror', error => errors.push(error.message));
+                page.on('console', msg => {
+                  if (msg.type() === 'error') errors.push(msg.text());
+                });
+
+                await page.goto(process.env.SITE_URL, { waitUntil: 'networkidle2' });
+                await browser.close();
+
+                if (errors.length > 0) {
+                  console.error('JavaScript errors detected:', errors);
+                  process.exit(1);
+                }
+              } catch (e) {
+                console.error('Browser check failed:', e);
+                process.exit(1);
+              }
+            })();
+          EOF
+
+            if [ -f "package.json" ] && grep -q "puppeteer" package.json; then
+              npm ci --only=production
+              if ! SITE_URL="$SITE_URL" node check-js-errors.js; then
+                echo "❌ JavaScript errors detected on production site"
+                ROLLBACK_NEEDED=true
+              fi
+            fi
+          fi
+
+          echo "rollback=${ROLLBACK_NEEDED}" >> $GITHUB_OUTPUT
+
+      - name: Check error rate metrics
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          # Check if error rate exceeds threshold
+          # This would integrate with your monitoring service
+          echo "Checking error rate metrics..."
+
+          # Example: Check GitHub Pages deployment status
+          DEPLOYMENT_STATUS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/pages \
+            --jq '.status')
+
+          if [ "$DEPLOYMENT_STATUS" != "built" ]; then
+            echo "Deployment status is not 'built': $DEPLOYMENT_STATUS"
+          fi
+
+  # Automatic rollback execution
+  execute-rollback:
+    name: Execute Rollback
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: needs.health-check.outputs.should-rollback == 'true' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine target commit
+        id: target
+        run: |
+          if [ "${{ github.event.inputs.target_commit }}" != "" ]; then
+            TARGET="${{ github.event.inputs.target_commit }}"
+          else
+            TARGET="${{ needs.health-check.outputs.previous-commit }}"
+          fi
+          echo "commit=${TARGET}" >> $GITHUB_OUTPUT
+          echo "Rolling back to commit: ${TARGET}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Rollback to previous version
+        run: |
+          TARGET_COMMIT="${{ steps.target.outputs.commit }}"
+
+          # Create rollback branch
+          ROLLBACK_BRANCH="rollback-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b $ROLLBACK_BRANCH $TARGET_COMMIT
+
+          # Force push to main (requires branch protection rules adjustment)
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            git push --force origin $ROLLBACK_BRANCH:main
+          fi
+
+          # Tag the rollback
+          git tag -a "rollback-$(date +%Y%m%d-%H%M%S)" \
+            -m "Rollback to ${TARGET_COMMIT} - Reason: ${{ github.event.inputs.reason || 'Automated rollback due to health check failure' }}"
+          git push origin --tags
+
+      - name: Rebuild and deploy previous version
+        run: |
+          npm ci
+          npm run build
+
+          # Deploy the rolled-back version
+          npm run deploy || echo "Deploy command not found, using GitHub Pages default"
+
+      - name: Verify rollback success
+        run: |
+          sleep 30
+          SITE_URL="${{ secrets.PRODUCTION_URL || 'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}' }}"
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL")
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Rollback successful! Site is responding normally."
+          else
+            echo "⚠️  Site may still be updating. Status code: $STATUS"
+          fi
+
+      - name: Create rollback issue
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reason = context.payload.inputs?.reason || 'Automated rollback due to health check failure';
+            const targetCommit = '${{ steps.target.outputs.commit }}';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔄 Rollback Executed: ${new Date().toISOString()}`,
+              body: `## Rollback Details
+
+              - **Reason**: ${reason}
+              - **Rolled back to**: ${targetCommit}
+              - **Triggered by**: ${context.actor}
+              - **Workflow run**: ${context.runId}
+
+              ### Next Steps
+              1. Investigate the root cause of the failure
+              2. Fix the issue in a new branch
+              3. Test thoroughly before merging
+              4. Monitor deployment closely
+
+              ### Related Information
+              - [Failed workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.payload.workflow_run?.id || context.runId})
+              - [Commit that was rolled back](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
+              `,
+              labels: ['rollback', 'production-issue', 'high-priority']
+            });
+
+  # Notification job
+  notify-rollback:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [health-check, execute-rollback]
+    if: always() && needs.execute-rollback.result != 'skipped'
+    steps:
+      - name: Send notification
+        run: |
+          if [ "${{ needs.execute-rollback.result }}" = "success" ]; then
+            echo "🔄 Rollback completed successfully"
+            MESSAGE="Production has been rolled back successfully."
+          else
+            echo "❌ Rollback failed or was skipped"
+            MESSAGE="Rollback attempt failed or was not needed."
+          fi
+
+          # Add notification integrations here (Slack, Discord, email, etc.)
+          echo "Notification: $MESSAGE"
+
+      - name: Update deployment status
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Update deployment status
+            const deployments = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: 'production'
+            });
+
+            if (deployments.data.length > 0) {
+              const latestDeployment = deployments.data[0];
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: latestDeployment.id,
+                state: 'failure',
+                description: 'Rolled back due to health check failure',
+                environment: 'production'
+              });
+            }

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "app/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "lib/**/*.{ts,tsx}",
+    "utils/**/*.{ts,tsx}",
+    "hooks/**/*.{ts,tsx}",
+    "game/**/*.{ts,tsx}",
+    "e2e/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "**/*.{ts,tsx,js,jsx}",
+    "!**/*.test.{ts,tsx}",
+    "!**/*.spec.{ts,tsx}",
+    "!**/__tests__/**",
+    "!**/node_modules/**",
+    "!**/.next/**",
+    "!**/out/**",
+    "!**/dist/**",
+    "!**/build/**",
+    "!**/coverage/**"
+  ],
+  "ignore": [
+    "**/*.test.{ts,tsx,js,jsx}",
+    "**/*.spec.{ts,tsx,js,jsx}",
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    "**/test-*.{ts,tsx,js,jsx}",
+    "**/debug-*.{ts,tsx,js,jsx}",
+    "**/screenshot-*.{ts,tsx,js,jsx}",
+    "**/*.d.ts",
+    ".next/**",
+    "out/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "node_modules/**",
+    "public/**",
+    "scripts/**/*.js",
+    "*.config.{js,ts}",
+    "eslint.config.mjs"
+  ],
+  "ignoreDependencies": [
+    "@types/animejs",
+    "tailwindcss",
+    "eslint-config-next"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "next": {
+    "entry": [
+      "app/**/*.{ts,tsx}",
+      "app/**/layout.{ts,tsx}",
+      "app/**/page.{ts,tsx}",
+      "app/**/loading.{ts,tsx}",
+      "app/**/error.{ts,tsx}",
+      "app/**/not-found.{ts,tsx}",
+      "middleware.{ts,tsx}"
+    ]
+  },
+  "vitest": {
+    "entry": [
+      "vitest.config.ts",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+      "**/__tests__/**/*.{ts,tsx}"
+    ]
+  },
+  "playwright": {
+    "entry": [
+      "playwright.config.ts",
+      "e2e/**/*.spec.{ts,tsx}",
+      "e2e/**/*.test.{ts,tsx}"
+    ]
+  },
+  "eslint": {
+    "entry": [
+      "eslint.config.mjs",
+      ".eslintrc.*"
+    ]
+  }
+}

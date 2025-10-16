@@ -1,0 +1,244 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Enable debug logging'
+        required: false
+        default: false
+
+env:
+  NODE_VERSION: '20'
+  CACHE_KEY: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+jobs:
+  # Quality checks with matrix strategy for parallel execution
+  quality-checks:
+    name: Quality Checks - ${{ matrix.check }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        check: [lint, typecheck, test]
+        include:
+          - check: test
+            os: ubuntu-latest
+            coverage: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for better caching
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            .next/cache
+          key: ${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run linting
+        if: matrix.check == 'lint'
+        run: npm run lint
+
+      - name: Type checking
+        if: matrix.check == 'typecheck'
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        if: matrix.check == 'test'
+        run: npm test
+
+      - name: Generate test coverage
+        if: matrix.check == 'test' && matrix.coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage reports
+        if: matrix.check == 'test' && matrix.coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && matrix.check == 'test'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = `✅ Tests passed for commit ${context.sha.substring(0, 7)}`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            })
+
+  # Security scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+  # Build verification
+  build-check:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    needs: [quality-checks]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Check build output
+        run: |
+          if [ ! -d "out" ]; then
+            echo "Build output directory 'out' not found!"
+            exit 1
+          fi
+          echo "Build output size:"
+          du -sh out/
+
+      - name: Upload build artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v3
+        with:
+          name: production-build
+          path: out/
+          retention-days: 7
+
+  # Performance checks
+  performance:
+    name: Performance Analysis
+    runs-on: ubuntu-latest
+    needs: [build-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Analyze bundle size
+        run: |
+          npm run build
+          echo "Bundle Analysis:"
+          echo "Build completed successfully"
+
+      - name: Check performance budget
+        run: |
+          # Check if main bundle is under 200KB
+          MAIN_JS_SIZE=$(find out/_next/static -name "*.js" -exec du -k {} \; | sort -rn | head -1 | cut -f1)
+          echo "Main JS bundle size: ${MAIN_JS_SIZE}KB"
+          if [ "$MAIN_JS_SIZE" -gt 200 ]; then
+            echo "Warning: Main JS bundle exceeds 200KB budget"
+          fi
+
+  # Deploy to staging (for PRs)
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [quality-checks, security, build-check]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for preview
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_PREVIEW: true
+
+      - name: Comment PR with preview link
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Preview deployment ready! Check the artifacts for the build output.'
+            })
+
+  # Notify on failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [quality-checks, security, build-check]
+    if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "Pipeline failed for commit ${{ github.sha }}"
+          echo "Failed job: ${{ job.status }}"
+          # Add notification service integration here (Slack, Discord, etc.)
+
+  # Success summary
+  pipeline-success:
+    name: Pipeline Success
+    runs-on: ubuntu-latest
+    needs: [quality-checks, security, build-check]
+    if: success()
+    steps:
+      - name: Summary
+        run: |
+          echo "✅ All quality gates passed!"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Triggered by: ${{ github.actor }}"

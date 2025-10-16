@@ -137,3 +137,40 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+# TFQ test failure queue database
+.tfq/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Bundle analyzer
+.next/analyze
+
+# Performance reports
+performance-report.json
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Debug and test files
+debug-*.js
+test-*.js
+test-*.html
+screenshot-*.js
+screenshot-*.png
+*-screenshot-*.png
+quick-*.js
+quick-*.png
+final-*.js
+final-*.png
+visual-*.js
+visual-*.png
+debug-screenshot-*/
+screenshot-*/
+quick-*/
+visual-*/

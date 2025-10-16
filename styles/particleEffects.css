@@ -1,0 +1,201 @@
+/* Particle Effects Styles */
+
+.particle-effects-container {
+  position: relative;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Base particle styles */
+.particle {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Steam particles */
+.particle-steam {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(1px);
+  mix-blend-mode: screen;
+  animation: steam-float 3s ease-in-out infinite;
+}
+
+@keyframes steam-float {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-50px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Explosion particles */
+.particle-explosion {
+  background: radial-gradient(circle, #FFD700 0%, #FF6347 50%, transparent 70%);
+  box-shadow: 0 0 10px rgba(255, 100, 0, 0.5);
+  animation: explosion-burst 0.8s ease-out;
+}
+
+@keyframes explosion-burst {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.8) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Confetti particles */
+.particle-confetti {
+  border-radius: 0;
+  animation: confetti-fall 5s linear;
+}
+
+.particle-confetti:nth-child(odd) {
+  animation: confetti-fall-rotate 5s linear;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-fall-rotate {
+  0% {
+    transform: translateY(-100vh) rotateX(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateX(360deg) rotateY(720deg);
+    opacity: 0;
+  }
+}
+
+/* Sparkle particles */
+.particle-sparkle {
+  background: linear-gradient(45deg, #FFD700, #FFF8DC);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: sparkle-twinkle 1.5s ease-in-out;
+}
+
+@keyframes sparkle-twinkle {
+  0%, 100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+/* Bubble particles */
+.particle-bubble {
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(135, 206, 235, 0.4));
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  animation: bubble-rise 4s ease-in-out;
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.5);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-50px) translateX(10px) scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100px) translateX(-10px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Performance optimizations */
+@media (prefers-reduced-motion: reduce) {
+  .particle,
+  .particle-steam,
+  .particle-explosion,
+  .particle-confetti,
+  .particle-sparkle,
+  .particle-bubble {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Low performance mode */
+.low-performance .particle {
+  animation-duration: 0.5s !important;
+  animation-iteration-count: 1 !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .particle-effects-container {
+    /* Reduce particle count on mobile */
+    --particle-limit: 20;
+  }
+
+  .particle {
+    animation-duration: calc(var(--animation-duration, 1s) * 0.8);
+  }
+}
+
+/* Layering for better visual depth */
+.particle:nth-child(3n) {
+  z-index: 9997;
+  opacity: 0.7;
+}
+
+.particle:nth-child(3n+1) {
+  z-index: 9998;
+  opacity: 0.85;
+}
+
+.particle:nth-child(3n+2) {
+  z-index: 9999;
+  opacity: 1;
+}
+
+/* Special effects for specific game states */
+.caffeine-low .particle-steam {
+  animation-duration: 5s;
+  opacity: 0.5;
+}
+
+.caffeine-high .particle-steam {
+  animation-duration: 1.5s;
+  filter: blur(0.5px);
+}
+
+.game-over .particle-explosion {
+  animation-duration: 1.5s;
+  background: radial-gradient(circle, #FF0000 0%, #8B0000 50%, transparent 70%);
+}
+
+.victory .particle-confetti {
+  animation-duration: 3s;
+  animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
