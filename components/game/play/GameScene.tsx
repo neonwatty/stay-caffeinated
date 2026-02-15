@@ -159,7 +159,7 @@ export function GameScene({ character }: GameSceneProps) {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-900">
       {/* Layer 1 — Background (absolute inset-0, centered) */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <WorkspaceBackgroundSVG
           caffeineLevel={caffeinePercentage}
           timeProgress={timeProgress / 100}
@@ -169,7 +169,7 @@ export function GameScene({ character }: GameSceneProps) {
       </div>
 
       {/* Layer 2 — Character (absolute inset-0, centered) */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {character === 'officeWorker' ? (
           <OfficeWorkerSVG
             caffeineLevel={caffeinePercentage}
