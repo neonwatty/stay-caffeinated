@@ -67,7 +67,7 @@ interface GameSceneProps {
 }
 
 export function GameScene({ character }: GameSceneProps) {
-  const { consumeDrink, pauseGame } = useGame();
+  const { consumeDrink, healHealth, pauseGame } = useGame();
   const {
     caffeinePercentage,
     healthPercentage,
@@ -120,6 +120,17 @@ export function GameScene({ character }: GameSceneProps) {
     };
   }, []);
 
+  // ---- Escape key to pause ----
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPlaying) {
+        pauseGame();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, pauseGame]);
+
   // ---- Drink consumption handler ----
   const handleConsume = useCallback(
     (drinkType: DrinkType) => {
@@ -128,8 +139,13 @@ export function GameScene({ character }: GameSceneProps) {
       const boost = getDrinkCaffeineBoost(drinkType);
       consumeDrink(boost, drinkType);
       startCooldown(drinkType);
+
+      // Water heals the player
+      if (drinkType === 'water') {
+        healHealth(5);
+      }
     },
-    [drinkRestricted, consumeDrink, startCooldown],
+    [drinkRestricted, consumeDrink, healHealth, startCooldown],
   );
 
   // ---- Banner complete handler ----

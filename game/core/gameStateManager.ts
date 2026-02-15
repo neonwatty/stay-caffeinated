@@ -143,6 +143,16 @@ export class GameStateManager {
     this.notifyListeners();
   }
 
+  // Public health modification
+  healHealth(amount: number): void {
+    if (this.state.state !== 'playing') return;
+    this.state.stats.currentHealthLevel = Math.min(
+      HEALTH_MAX,
+      this.state.stats.currentHealthLevel + amount
+    );
+    this.notifyListeners();
+  }
+
   // Health management
   private updateHealth(deltaTime: number): void {
     if (!this.state.stats.isInOptimalZone) {

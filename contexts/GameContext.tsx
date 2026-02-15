@@ -22,6 +22,7 @@ interface GameContextValue {
 
   // Game actions
   consumeDrink: (caffeineAmount: number, drinkType?: DrinkType) => void;
+  healHealth: (amount: number) => void;
   triggerEvent: (eventType: EventType) => void;
 
   // Drink management
@@ -129,6 +130,11 @@ export function GameProvider({ children, initialConfig }: GameProviderProps) {
     gameManagerRef.current.consumeDrink(caffeineAmount);
   }, []);
 
+  const healHealth = useCallback((amount: number) => {
+    if (!gameManagerRef.current) return;
+    gameManagerRef.current.healHealth(amount);
+  }, []);
+
   const triggerEvent = useCallback((eventType: EventType) => {
     if (!gameManagerRef.current) return;
     // Event triggering logic will be implemented in event system
@@ -204,6 +210,7 @@ export function GameProvider({ children, initialConfig }: GameProviderProps) {
     resetGame,
     returnToMenu,
     consumeDrink,
+    healHealth,
     triggerEvent,
     drinkCooldowns,
     canConsumeDrink,
@@ -211,7 +218,7 @@ export function GameProvider({ children, initialConfig }: GameProviderProps) {
     setConfig,
     fps,
     lastUpdateTime,
-  }), [gameState, isLoading, startGame, pauseGame, resumeGame, resetGame, returnToMenu, consumeDrink, triggerEvent, drinkCooldowns, canConsumeDrink, setDifficulty, setConfig, fps, lastUpdateTime]);
+  }), [gameState, isLoading, startGame, pauseGame, resumeGame, resetGame, returnToMenu, consumeDrink, healHealth, triggerEvent, drinkCooldowns, canConsumeDrink, setDifficulty, setConfig, fps, lastUpdateTime]);
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
