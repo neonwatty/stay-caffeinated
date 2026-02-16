@@ -47,6 +47,19 @@ export function GameHUD({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
+      {/* Workday progress bar */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/30">
+        <div
+          className="h-full transition-all duration-500 ease-linear"
+          style={{
+            width: `${Math.max(0, Math.min(100, timeProgress))}%`,
+            background: timeProgress > 80
+              ? 'linear-gradient(90deg, #22C55E, #FFD700)'
+              : 'linear-gradient(90deg, #3B82F6, #22C55E)',
+          }}
+        />
+      </div>
+
       {/* Top-left: Caffeine Meter */}
       <div className="absolute top-2 left-2">
         <CaffeineMeterSVG
