@@ -46,7 +46,7 @@ export class GameStateManager {
     return {
       state: 'menu',
       stats: {
-        currentCaffeineLevel: 50, // Start at moderate caffeine
+        currentCaffeineLevel: 40, // Start at moderate caffeine
         currentHealthLevel: 100,
         timeElapsed: 0,
         drinksConsumed: 0,
@@ -88,7 +88,7 @@ export class GameStateManager {
     this.state.gameTime = 0;
     this.state.realTimeElapsed = 0;
     this.state.stats = {
-      currentCaffeineLevel: 50,
+      currentCaffeineLevel: 40,
       currentHealthLevel: 100,
       timeElapsed: 0,
       drinksConsumed: 0,
@@ -140,6 +140,16 @@ export class GameStateManager {
   consumeDrink(caffeineAmount: number): void {
     this.updateCaffeineLevel(caffeineAmount);
     this.state.stats.drinksConsumed++;
+    this.notifyListeners();
+  }
+
+  // Public health modification
+  healHealth(amount: number): void {
+    if (this.state.state !== 'playing') return;
+    this.state.stats.currentHealthLevel = Math.min(
+      HEALTH_MAX,
+      this.state.stats.currentHealthLevel + amount
+    );
     this.notifyListeners();
   }
 
