@@ -7,7 +7,7 @@ import type { DifficultyConfig } from '@/types';
 // Timing constants
 export const FRAME_RATE = 60; // Target FPS
 export const TICK_INTERVAL = 1000 / FRAME_RATE;
-export const WORKDAY_REAL_TIME = 3 * 60 * 1000; // 3 minutes in milliseconds
+export const WORKDAY_REAL_TIME = 4 * 60 * 1000; // 4 minutes in milliseconds
 
 // Caffeine system constants
 export const CAFFEINE_MIN = 0;
@@ -20,7 +20,7 @@ export const CAFFEINE_DANGER_HIGH = 80;
 // Health system constants
 export const HEALTH_MIN = 0;
 export const HEALTH_MAX = 100;
-export const HEALTH_DEPLETION_RATE = 0.5; // per second when outside optimal zone
+export const HEALTH_DEPLETION_RATE = 0.3; // per second when outside optimal zone
 export const HEALTH_CRITICAL = 20;
 
 // Score constants

@@ -46,7 +46,7 @@ export class GameStateManager {
     return {
       state: 'menu',
       stats: {
-        currentCaffeineLevel: 50, // Start at moderate caffeine
+        currentCaffeineLevel: 40, // Start at moderate caffeine
         currentHealthLevel: 100,
         timeElapsed: 0,
         drinksConsumed: 0,
@@ -88,7 +88,7 @@ export class GameStateManager {
     this.state.gameTime = 0;
     this.state.realTimeElapsed = 0;
     this.state.stats = {
-      currentCaffeineLevel: 50,
+      currentCaffeineLevel: 40,
       currentHealthLevel: 100,
       timeElapsed: 0,
       drinksConsumed: 0,
