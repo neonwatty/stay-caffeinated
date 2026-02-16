@@ -16,7 +16,6 @@ on:
 
 env:
   NODE_VERSION: '20'
-  CACHE_KEY: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
 
 jobs:
   # Quality checks with matrix strategy for parallel execution
@@ -51,7 +50,7 @@ jobs:
             ~/.npm
             node_modules
             .next/cache
-          key: ${{ env.CACHE_KEY }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
