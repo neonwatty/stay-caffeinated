@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface CaffeineMeterSVGProps {
   caffeineLevel: number;     // 0-100
@@ -32,6 +32,19 @@ export function CaffeineMeterSVG({
 }: CaffeineMeterSVGProps) {
   const level = Math.round(Math.max(0, Math.min(100, caffeineLevel)));
   const health = Math.max(0, Math.min(100, healthLevel));
+
+  const [isPulsing, setIsPulsing] = useState(false);
+  const prevCaffeineRef = useRef(caffeineLevel);
+
+  useEffect(() => {
+    const delta = Math.abs(caffeineLevel - prevCaffeineRef.current);
+    prevCaffeineRef.current = caffeineLevel;
+    if (delta > 5) {
+      setIsPulsing(true);
+      const timer = setTimeout(() => setIsPulsing(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [caffeineLevel]);
 
   const state = useMemo(() => {
     const t = level / 100;
@@ -100,7 +113,18 @@ export function CaffeineMeterSVG({
   const zoneMaxY = mugBottom - (optimalZone[1] / 100) * mugHeight;
 
   return (
-    <div style={{ width, height, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{
+      width,
+      height,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 8,
+      boxShadow: isPulsing
+        ? `0 0 16px 4px hsl(${state.hue}, ${state.sat}%, ${state.light}%)`
+        : 'none',
+      transition: 'box-shadow 300ms ease-out',
+    }}>
       {isActive && <style dangerouslySetInnerHTML={{ __html: keyframes }} />}
       <svg
         viewBox="0 0 200 340"
