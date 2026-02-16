@@ -267,6 +267,7 @@ export function PixiShaderCanvas({
         };
 
         // Build all three filters
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const filters: Record<ShaderDemo, InstanceType<typeof PIXI.Filter>> = {} as any;
         for (const key of Object.keys(shaderSources) as ShaderDemo[]) {
           filters[key] = new PIXI.Filter({
@@ -343,7 +344,9 @@ export function PixiShaderCanvas({
           // Apply the selected filter
           const filter = filters[d];
           if (filter.resources.uniforms) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (filter.resources.uniforms as any).uniforms.uTime = t;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (filter.resources.uniforms as any).uniforms.uIntensity = intensity;
           }
           charContainer.filters = [filter];

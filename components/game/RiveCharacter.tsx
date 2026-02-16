@@ -171,6 +171,7 @@ export function RiveInspector({
       </div>
       {info && (
         <div className="text-xs text-gray-400 mt-2 max-h-32 overflow-y-auto">
+          {/* eslint-disable @typescript-eslint/no-explicit-any */}
           {info.artboards?.map((ab: any) => (
             <div key={ab.name} className="mb-1">
               <div className="text-gray-300 font-semibold">{ab.name}</div>
@@ -189,6 +190,7 @@ export function RiveInspector({
               )}
             </div>
           ))}
+          {/* eslint-enable @typescript-eslint/no-explicit-any */}
         </div>
       )}
     </div>
