@@ -34,28 +34,28 @@ export const DIFFICULTY_CONFIGS: Record<string, DifficultyConfig> = {
     name: 'Intern',
     workdayLength: 6 * 60, // 6 hours in game minutes
     optimalZoneSize: 50, // 25-75 range
-    caffeineDepletionRate: 0.5,
+    caffeineDepletionRate: 0.15,
     description: 'Easy mode - shorter day, larger optimal zone'
   },
   junior: {
     name: 'Junior Dev',
     workdayLength: 8 * 60, // 8 hours
     optimalZoneSize: 40, // 30-70 range
-    caffeineDepletionRate: 0.75,
+    caffeineDepletionRate: 0.25,
     description: 'Normal mode - standard workday'
   },
   senior: {
     name: 'Senior Dev',
     workdayLength: 10 * 60, // 10 hours
     optimalZoneSize: 30, // 35-65 range
-    caffeineDepletionRate: 1.0,
+    caffeineDepletionRate: 0.35,
     description: 'Hard mode - longer day, smaller optimal zone'
   },
   founder: {
     name: 'Startup Founder',
     workdayLength: 14 * 60, // 14 hours
     optimalZoneSize: 20, // 40-60 range
-    caffeineDepletionRate: 1.5,
+    caffeineDepletionRate: 0.5,
     description: 'Extreme mode - very long day, tiny optimal zone'
   }
 };
