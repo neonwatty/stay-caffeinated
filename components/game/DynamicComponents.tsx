@@ -54,6 +54,15 @@ export const DynamicScoreDisplay = dynamic(
   }
 );
 
+// Dynamically import Pixi.js sprite character (requires WebGL, no SSR)
+export const DynamicSpriteCharacter = dynamic(
+  () => import('./SpriteCharacter').then(mod => ({ default: mod.SpriteCharacter })),
+  {
+    loading: LoadingFallback,
+    ssr: false,
+  }
+);
+
 // Preload function for critical components
 export const preloadGameComponents = () => {
   // Preload components that will be needed soon
