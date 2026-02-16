@@ -37,6 +37,7 @@ export function StickFigureSVG({
       shakeAmt: isWired ? 2 + (t - 0.7) * 12 : isPlaid ? 6 : 0,
       lineColor: isSleepy ? '#667' : isWired ? '#C33' : isPlaid ? '#F44' : '#333',
       bgColor: isSleepy ? 'hsl(220, 20%, 95%)' : isWired ? 'hsl(0, 20%, 96%)' : isPlaid ? '#CC2200' : 'hsl(0, 0%, 97%)',
+      typingSpeed: isSleepy ? 0 : isOptimal ? 1 : isWired ? 3 : 0,
     };
   }, [level]);
 
