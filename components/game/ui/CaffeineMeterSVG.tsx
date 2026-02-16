@@ -188,9 +188,24 @@ export function CaffeineMeterSVG({
           style={{ transition: 'y1 0.3s ease, y2 0.3s ease' }}
         />
         {/* Zone label */}
-        <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="10" fill="hsl(120, 50%, 55%)" opacity="0.6">
-          opt
-        </text>
+        {state.isOptimal && (
+          <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="10" fontWeight="bold"
+            fill="hsl(120, 50%, 55%)">
+            OPTIMAL
+          </text>
+        )}
+        {state.isLow && (
+          <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="10" fontWeight="bold"
+            fill="#60A5FA">
+            LOW
+          </text>
+        )}
+        {state.isHigh && (
+          <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="10" fontWeight="bold"
+            fill="#F87171">
+            HIGH
+          </text>
+        )}
 
         {/* Handle */}
         <path d="M 148 100 Q 195 100, 195 160 Q 195 220, 148 210"
