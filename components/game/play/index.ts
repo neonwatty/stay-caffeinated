@@ -4,4 +4,5 @@ export { GameScene } from './GameScene';
 export { GameHUD } from './GameHUD';
 export { DrinkToolbar } from './DrinkToolbar';
 export { PauseOverlay } from './PauseOverlay';
+export { FloatingText } from './FloatingText';
 export { GameOverOverlay } from './GameOverOverlay';
