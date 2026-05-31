@@ -7,6 +7,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { GameStateManager, GameStateData } from '@/game/core/gameStateManager';
 import { GameLoop, createGameLoop, destroyGameLoop } from '@/game/core/gameLoop';
+import { getDrinkCooldown } from '@/game/data/drinks';
 import type { GameConfig, Difficulty, DrinkType, EventType } from '@/types';
 
 interface GameContextValue {
@@ -122,7 +123,7 @@ export function GameProvider({ children, initialConfig }: GameProviderProps) {
     if (drinkType) {
       setDrinkCooldowns(prev => {
         const newCooldowns = new Map(prev);
-        newCooldowns.set(drinkType, Date.now() + 5000); // 5 second cooldown
+        newCooldowns.set(drinkType, Date.now() + getDrinkCooldown(drinkType));
         return newCooldowns;
       });
     }
@@ -143,7 +144,7 @@ export function GameProvider({ children, initialConfig }: GameProviderProps) {
 
   const canConsumeDrink = useCallback((drinkType: DrinkType) => {
     const cooldownTime = drinkCooldowns.get(drinkType) || 0;
-    return Date.now() > cooldownTime;
+    return Date.now() >= cooldownTime;
   }, [drinkCooldowns]);
 
   // Configuration
@@ -183,6 +184,7 @@ export function GameProvider({ children, initialConfig }: GameProviderProps) {
   useEffect(() => {
     let frameCount = 0;
     let lastTime = performance.now();
+    let animationFrame = 0;
 
     const measureFps = () => {
       frameCount++;
@@ -194,10 +196,10 @@ export function GameProvider({ children, initialConfig }: GameProviderProps) {
         lastTime = currentTime;
       }
 
-      requestAnimationFrame(measureFps);
+      animationFrame = requestAnimationFrame(measureFps);
     };
 
-    const animationFrame = requestAnimationFrame(measureFps);
+    animationFrame = requestAnimationFrame(measureFps);
     return () => cancelAnimationFrame(animationFrame);
   }, []);
 

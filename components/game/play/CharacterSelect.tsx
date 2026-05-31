@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useGame } from '@/contexts/GameContext';
-import { OfficeWorkerSVG } from '@/components/game/OfficeWorkerSVG';
 import { CoffeeCupSVG } from '@/components/game/CoffeeCupSVG';
+import { SpriteCharacter } from '@/components/game/SpriteCharacter';
 import { DIFFICULTY_CONFIGS } from '@/game/core/constants';
 import type { Difficulty } from '@/types/game';
 
@@ -30,11 +30,10 @@ const DIFFICULTY_KEYS = Object.keys(DIFFICULTY_CONFIGS) as Difficulty[];
 
 export function CharacterSelect({ onSelect }: CharacterSelectProps) {
   const { setDifficulty, startGame } = useGame();
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterType | null>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterType>('officeWorker');
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('junior');
 
   function handleStart() {
-    if (!selectedCharacter) return;
     setDifficulty(selectedDifficulty);
     onSelect(selectedCharacter);
     startGame();
@@ -54,6 +53,8 @@ export function CharacterSelect({ onSelect }: CharacterSelectProps) {
             <button
               key={char.id}
               type="button"
+              aria-pressed={isSelected}
+              aria-label={`${isSelected ? 'Selected character' : 'Choose character'} ${char.name}. ${char.description}`}
               onClick={() => setSelectedCharacter(char.id)}
               className={`flex flex-col items-center rounded-xl border-2 bg-gray-800 p-6 transition-all hover:bg-gray-750 ${
                 isSelected
@@ -63,7 +64,7 @@ export function CharacterSelect({ onSelect }: CharacterSelectProps) {
             >
               <div className="mb-3">
                 {char.id === 'officeWorker' ? (
-                  <OfficeWorkerSVG caffeineLevel={50} width={160} height={160} isActive={false} />
+                  <SpriteCharacter caffeineLevel={50} width={160} height={160} isActive={false} />
                 ) : (
                   <CoffeeCupSVG caffeineLevel={50} width={160} height={160} isActive={false} />
                 )}
@@ -106,8 +107,7 @@ export function CharacterSelect({ onSelect }: CharacterSelectProps) {
       <button
         type="button"
         onClick={handleStart}
-        disabled={!selectedCharacter}
-        className="rounded-xl bg-green-600 px-8 py-3 text-lg font-bold transition-colors hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-xl bg-green-600 px-8 py-3 text-lg font-bold transition-colors hover:bg-green-500"
       >
         Start Shift
       </button>

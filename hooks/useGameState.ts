@@ -7,7 +7,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useGame } from '@/contexts/GameContext';
 import type { GameStats, GameState, Difficulty } from '@/types';
-import { DIFFICULTY_CONFIGS } from '@/game/core/constants';
+import { DIFFICULTY_CONFIGS, WORKDAY_REAL_TIME } from '@/game/core/constants';
 
 export interface UseGameStateReturn {
   // State
@@ -67,10 +67,9 @@ export function useGameState(): UseGameStateReturn {
   // Calculate time progress
   const difficultyConfig = DIFFICULTY_CONFIGS[difficulty];
   const timeProgress = useMemo(() => {
-    if (!difficultyConfig) return 0;
-    const totalSeconds = difficultyConfig.workdayLength * 60;
-    return Math.min(100, (stats.timeElapsed / totalSeconds) * 100);
-  }, [stats.timeElapsed, difficultyConfig]);
+    const elapsedMs = gameState?.realTimeElapsed ?? stats.timeElapsed * 1000;
+    return Math.min(100, (elapsedMs / WORKDAY_REAL_TIME) * 100);
+  }, [gameState?.realTimeElapsed, stats.timeElapsed]);
 
   // Format time display
   const formattedTime = useMemo(() => {

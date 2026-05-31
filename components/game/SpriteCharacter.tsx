@@ -1,93 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Application, extend, useTick } from '@pixi/react';
-import { Container, Sprite, Texture, Rectangle, Assets } from 'pixi.js';
 import type { CharacterState } from './svg/CharacterStates';
-import { AnimatedCharacter } from './Character';
-import { DEFAULT_SPRITE_CONFIG, type SpriteConfig, type SpriteSheetConfig } from './sprites/config';
-
-// Register Pixi display objects for @pixi/react JSX
-extend({ Container, Sprite });
-
-/** Cut a horizontal or vertical sprite strip into individual frame textures */
-async function loadSpriteFrames(
-  config: SpriteSheetConfig,
-  basePath: string,
-): Promise<Texture[]> {
-  const url = `${basePath}${config.path}`;
-  const baseTexture = await Assets.load(url);
-  const frames: Texture[] = [];
-
-  for (let i = 0; i < config.frameCount; i++) {
-    const x = config.layout === 'vertical' ? 0 : i * config.frameWidth;
-    const y = config.layout === 'vertical' ? i * config.frameHeight : 0;
-
-    frames.push(
-      new Texture({
-        source: baseTexture.source,
-        frame: new Rectangle(x, y, config.frameWidth, config.frameHeight),
-      }),
-    );
-  }
-
-  return frames;
-}
-
-/** Frame-by-frame sprite animator using useTick */
-function SpriteAnimator({
-  frames,
-  fps,
-  isActive,
-  width,
-  height,
-}: {
-  frames: Texture[];
-  fps: number;
-  isActive: boolean;
-  width: number;
-  height: number;
-}) {
-  const spriteRef = useRef<InstanceType<typeof Sprite> | null>(null);
-  const frameIndex = useRef(0);
-  const elapsed = useRef(0);
-
-  // Reset animation when frames change (state transition)
-  useEffect(() => {
-    frameIndex.current = 0;
-    elapsed.current = 0;
-    if (spriteRef.current && frames.length > 0) {
-      spriteRef.current.texture = frames[0];
-    }
-  }, [frames]);
-
-  useTick((ticker) => {
-    if (!isActive || !spriteRef.current || frames.length <= 1) return;
-
-    elapsed.current += ticker.deltaTime / 60;
-    const frameDuration = 1 / fps;
-
-    if (elapsed.current >= frameDuration) {
-      elapsed.current -= frameDuration;
-      frameIndex.current = (frameIndex.current + 1) % frames.length;
-      spriteRef.current.texture = frames[frameIndex.current];
-    }
-  });
-
-  if (frames.length === 0) return null;
-
-  return (
-    <pixiSprite
-      ref={spriteRef}
-      texture={frames[0]}
-      width={width}
-      height={height}
-      anchor={0.5}
-      x={width / 2}
-      y={height / 2}
-    />
-  );
-}
+import { DEFAULT_SPRITE_CONFIG, type SpriteConfig } from './sprites/config';
 
 export interface SpriteCharacterProps {
   caffeineLevel: number;
@@ -95,6 +10,8 @@ export interface SpriteCharacterProps {
   height?: number;
   className?: string;
   isActive?: boolean;
+  pressureState?: 'none' | 'drink' | 'event';
+  activeEventTitle?: string;
   showStateLabel?: boolean;
   spriteConfig?: SpriteConfig;
   customThresholds?: {
@@ -110,14 +27,14 @@ export const SpriteCharacter: React.FC<SpriteCharacterProps> = ({
   height = 220,
   className = '',
   isActive = true,
+  pressureState = 'none',
+  activeEventTitle,
   showStateLabel = false,
   spriteConfig = DEFAULT_SPRITE_CONFIG,
   customThresholds,
   onStateChange,
 }) => {
-  const [spriteFrames, setSpriteFrames] = useState<Map<CharacterState, Texture[]>>(new Map());
-  const [loaded, setLoaded] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [frameIndex, setFrameIndex] = useState(0);
   const prevStateRef = useRef<CharacterState>('optimal');
 
   const currentState = useMemo((): CharacterState => {
@@ -143,54 +60,21 @@ export const SpriteCharacter: React.FC<SpriteCharacterProps> = ({
     return nextData?.assetPrefix || nextData?.basePath || '';
   }, []);
 
-  // Load all sprite sheets
   useEffect(() => {
-    let cancelled = false;
+    setFrameIndex(0);
+  }, [currentState]);
 
-    async function loadAll() {
-      try {
-        const states: CharacterState[] = ['under', 'optimal', 'over'];
-        const entries = await Promise.all(
-          states.map(async (state): Promise<[CharacterState, Texture[]]> => {
-            const frames = await loadSpriteFrames(spriteConfig[state], basePath);
-            return [state, frames];
-          }),
-        );
-
-        if (!cancelled) {
-          setSpriteFrames(new Map(entries));
-          setLoaded(true);
-        }
-      } catch {
-        if (!cancelled) {
-          setLoadFailed(true);
-        }
-      }
-    }
-
-    loadAll();
-    return () => {
-      cancelled = true;
-    };
-  }, [spriteConfig, basePath]);
-
-  // Fall back to SVG character if sprites aren't available
-  if (loadFailed || !loaded) {
-    return (
-      <AnimatedCharacter
-        caffeineLevel={caffeineLevel}
-        width={width}
-        height={height}
-        className={className}
-        showStateLabel={showStateLabel}
-        animateTransitions={true}
-        isActive={isActive}
-      />
-    );
-  }
-
-  const currentFrames = spriteFrames.get(currentState) || [];
   const currentConfig = spriteConfig[currentState];
+
+  useEffect(() => {
+    if (!isActive || currentConfig.frameCount <= 1) return;
+
+    const interval = window.setInterval(() => {
+      setFrameIndex((index) => (index + 1) % currentConfig.frameCount);
+    }, 1000 / currentConfig.fps);
+
+    return () => window.clearInterval(interval);
+  }, [currentConfig.fps, currentConfig.frameCount, isActive]);
 
   const stateLabels: Record<CharacterState, string> = {
     under: 'Under-Caffeinated',
@@ -204,30 +88,57 @@ export const SpriteCharacter: React.FC<SpriteCharacterProps> = ({
     over: 'text-red-600',
   };
 
+  const isVertical = currentConfig.layout === 'vertical';
+  const sheetUrl = `${basePath}${currentConfig.path}`;
+  const backgroundSize = isVertical
+    ? `${width}px ${height * currentConfig.frameCount}px`
+    : `${width * currentConfig.frameCount}px ${height}px`;
+  const backgroundPosition = isVertical
+    ? `0px -${frameIndex * height}px`
+    : `-${frameIndex * width}px 0px`;
+
   return (
     <div
       className={`inline-flex flex-col items-center justify-center ${className}`}
       role="img"
-      aria-label={`Character is ${stateLabels[currentState].toLowerCase()}`}
+      aria-label={`Character is ${stateLabels[currentState].toLowerCase()}${pressureState === 'event' && activeEventTitle ? ` under pressure from ${activeEventTitle}` : ''}${pressureState === 'drink' ? ' after a drink choice' : ''}`}
+      data-pressure-state={pressureState}
+      data-active-event={activeEventTitle ?? ''}
+      style={{ imageRendering: 'pixelated' }}
     >
-      <Application
-        width={width}
-        height={height}
-        backgroundAlpha={0}
-        antialias
-        resolution={typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1}
-        autoDensity
-      >
-        <pixiContainer>
-          <SpriteAnimator
-            frames={currentFrames}
-            fps={currentConfig.fps}
-            isActive={isActive}
-            width={width}
-            height={height}
+      <div className="relative" style={{ width, height }}>
+        <div
+          data-testid="sprite-frame"
+          aria-hidden="true"
+          style={{
+            width,
+            height,
+            backgroundImage: `url(${sheetUrl})`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition,
+            backgroundSize,
+            imageRendering: 'pixelated',
+            filter: pressureState === 'event'
+              ? 'drop-shadow(0 0 12px rgba(248, 113, 113, 0.8))'
+              : pressureState === 'drink'
+                ? 'drop-shadow(0 0 12px rgba(34, 197, 94, 0.75))'
+                : undefined,
+            transform: pressureState === 'event' ? 'translateY(-2px)' : undefined,
+            transition: 'filter 160ms ease, transform 160ms ease',
+          }}
+        />
+        {pressureState !== 'none' && (
+          <div
+            data-testid="sprite-feedback"
+            aria-hidden="true"
+            className={`absolute inset-0 rounded-xl border-4 ${
+              pressureState === 'event'
+                ? 'border-red-400/70 shadow-[0_0_28px_rgba(248,113,113,0.5)]'
+                : 'border-emerald-300/70 shadow-[0_0_28px_rgba(52,211,153,0.45)]'
+            }`}
           />
-        </pixiContainer>
-      </Application>
+        )}
+      </div>
 
       {showStateLabel && (
         <div className={`mt-2 text-sm font-medium ${stateColors[currentState]} transition-all duration-300`}>

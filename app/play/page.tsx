@@ -8,6 +8,7 @@ import { GameScene } from '@/components/game/play/GameScene';
 import { PauseOverlay } from '@/components/game/play/PauseOverlay';
 import { GameOverOverlay } from '@/components/game/play/GameOverOverlay';
 import type { CharacterType } from '@/components/game/play/CharacterSelect';
+import type { StrategyRunSummary } from '@/components/game/play/GameScene';
 
 export default function PlayPage() {
   return (
@@ -19,17 +20,20 @@ export default function PlayPage() {
 
 function PlayContent() {
   const [character, setCharacter] = useState<CharacterType | null>(null);
+  const [strategySummary, setStrategySummary] = useState<StrategyRunSummary | undefined>();
 
   const { currentState, stats, caffeinePercentage, healthPercentage } = useGameState();
   const { resumeGame, resetGame, returnToMenu } = useGame();
 
   const handlePlayAgain = useCallback(() => {
     setCharacter(null);
+    setStrategySummary(undefined);
     resetGame();
   }, [resetGame]);
 
   const handleQuit = useCallback(() => {
     setCharacter(null);
+    setStrategySummary(undefined);
     returnToMenu();
   }, [returnToMenu]);
 
@@ -51,7 +55,10 @@ function PlayContent() {
   // Active game states — always render GameScene with conditional overlays
   return (
     <div className="relative w-full h-screen">
-      <GameScene character={character} />
+      <GameScene
+        character={character}
+        onStrategySummaryChange={setStrategySummary}
+      />
 
       {currentState === 'paused' && (
         <PauseOverlay onResume={resumeGame} onQuit={handleQuit} />
@@ -64,6 +71,7 @@ function PlayContent() {
           healthBonus={Math.round(healthPercentage * 10)}
           zoneBonus={Math.round(stats.streak * 50)}
           difficultyMultiplier={1}
+          strategySummary={strategySummary}
           onPlayAgain={handlePlayAgain}
           onMenu={handleQuit}
         />

@@ -7,7 +7,7 @@ import type { DifficultyConfig } from '@/types';
 // Timing constants
 export const FRAME_RATE = 60; // Target FPS
 export const TICK_INTERVAL = 1000 / FRAME_RATE;
-export const WORKDAY_REAL_TIME = 4 * 60 * 1000; // 4 minutes in milliseconds
+export const WORKDAY_REAL_TIME = 90 * 1000; // 90 seconds in milliseconds
 
 // Caffeine system constants
 export const CAFFEINE_MIN = 0;

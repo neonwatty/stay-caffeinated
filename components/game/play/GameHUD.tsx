@@ -48,7 +48,11 @@ export function GameHUD({
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
       {/* Workday progress bar */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/30">
+      <div
+        className="absolute top-0 left-0 right-0 h-1.5 bg-black/30"
+        data-testid="workday-progress"
+        aria-label={`Workday ${Math.round(timeProgress)}% complete`}
+      >
         <div
           className="h-full transition-all duration-500 ease-linear"
           style={{
@@ -61,7 +65,7 @@ export function GameHUD({
       </div>
 
       {/* Top-left: Caffeine Meter */}
-      <div className="absolute top-2 left-2">
+      <div className="absolute top-2 left-2" data-testid="caffeine-bar" aria-label={`Caffeine ${Math.round(caffeineLevel)}%`}>
         <CaffeineMeterSVG
           caffeineLevel={caffeineLevel}
           healthLevel={healthLevel}
@@ -73,7 +77,7 @@ export function GameHUD({
       </div>
 
       {/* Below caffeine meter: Health Bar */}
-      <div className="absolute left-2" style={{ top: 110 }}>
+      <div className="absolute left-2" style={{ top: 110 }} data-testid="health-bar" aria-label={`Health ${Math.round(healthLevel)}%`}>
         <HealthBarSVG
           healthLevel={healthLevel}
           caffeineLevel={caffeineLevel}
@@ -85,7 +89,7 @@ export function GameHUD({
       </div>
 
       {/* Top-right: Game Clock */}
-      <div className="absolute top-2 right-2">
+      <div className="absolute top-2 right-2" data-testid="time-display">
         <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10">
           <span className="text-white/90 text-sm font-mono font-semibold tracking-wide">
             {gameTime}
@@ -94,7 +98,7 @@ export function GameHUD({
       </div>
 
       {/* Below clock: Score Display */}
-      <div className="absolute right-2" style={{ top: 70 }}>
+      <div className="absolute right-2" style={{ top: 70 }} data-testid="score">
         <ScoreDisplaySVG
           score={score}
           streak={streak}

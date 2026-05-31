@@ -11,6 +11,13 @@ interface DrinkToolbarProps {
   onConsume: (drinkType: DrinkType) => void;
   onPause: () => void;
   disabled?: boolean;
+  drinkRestrictionRemainingSeconds?: number;
+  strategyContext?: {
+    caffeineLevel: number;
+    healthLevel: number;
+    nextEventTitle?: string;
+    optimalZone: [number, number];
+  };
   isActive: boolean;
 }
 
@@ -21,14 +28,46 @@ interface FloatingItem {
 
 const TOOLBAR_DRINKS: DrinkType[] = ['tea', 'coffee', 'espresso', 'energyDrink', 'water'];
 
+const DRINK_STRATEGY: Record<DrinkType, { role: string; baseline: string }> = {
+  tea: { role: 'Fine tune', baseline: 'Small lift, short cooldown' },
+  coffee: { role: 'Steady lift', baseline: 'Reliable zone entry' },
+  espresso: { role: 'Fast spike', baseline: 'Quick prep before events' },
+  energyDrink: { role: 'Emergency', baseline: 'Huge boost, long cooldown' },
+  water: { role: 'Recover', baseline: 'Heal without caffeine' },
+};
+
 function getCaffeineLabel(drinkType: DrinkType): string {
   if (drinkType === 'water') return '+5 HP';
   const drink = DRINKS.find((d) => d.id === drinkType);
   return drink ? `+${drink.caffeineBoost}` : '';
 }
 
-export function DrinkToolbar({ onConsume, onPause, disabled = false, isActive }: DrinkToolbarProps) {
-  const { isOnCooldown, getCooldownProgress } = useDrinkCooldown();
+function getDrinkStatusText(
+  locked: boolean,
+  remainingLockSeconds: number,
+  onCooldown: boolean,
+  remainingCooldownSeconds: number,
+): string {
+  if (locked) {
+    return remainingLockSeconds > 0 ? `Locked ${remainingLockSeconds}s` : 'Locked';
+  }
+
+  if (onCooldown) {
+    return `Cooling down ${remainingCooldownSeconds}s`;
+  }
+
+  return 'Ready';
+}
+
+export function DrinkToolbar({
+  onConsume,
+  onPause,
+  disabled = false,
+  drinkRestrictionRemainingSeconds = 0,
+  strategyContext,
+  isActive,
+}: DrinkToolbarProps) {
+  const { getCooldownState, getCooldownProgress } = useDrinkCooldown();
   const [floatingItems, setFloatingItems] = useState<FloatingItem[]>([]);
   const [bouncingDrink, setBouncingDrink] = useState<DrinkType | null>(null);
   const nextIdRef = useRef(0);
@@ -56,14 +95,31 @@ export function DrinkToolbar({ onConsume, onPause, disabled = false, isActive }:
         const drink = DRINKS.find((d) => d.id === drinkType);
         if (!drink) return null;
 
-        const onCooldown = isOnCooldown(drinkType);
+        const cooldownState = getCooldownState(drinkType);
+        const onCooldown = cooldownState.isOnCooldown;
         const progress = getCooldownProgress(drinkType);
         const isDisabled = onCooldown || disabled;
-        const state: 'idle' | 'cooldown' = onCooldown ? 'cooldown' : 'idle';
+        const state: 'idle' | 'cooldown' = isDisabled ? 'cooldown' : 'idle';
         const isBouncing = bouncingDrink === drinkType;
+        const strategy = DRINK_STRATEGY[drinkType];
+        const strategyCue = getStrategyCue(drinkType, strategy.baseline, strategyContext);
+        const statusId = `drink-${drinkType}-status`;
+        const statusText = getDrinkStatusText(
+          disabled,
+          drinkRestrictionRemainingSeconds,
+          onCooldown,
+          cooldownState.remainingSeconds,
+        );
 
         return (
-          <div key={drinkType} className="relative flex flex-col items-center">
+          <div
+            key={drinkType}
+            className="relative flex w-[78px] flex-col items-center"
+            data-testid={`drink-${drinkType}`}
+            data-cooldown={drink.cooldown}
+            data-disabled={isDisabled}
+            data-strategy-role={strategy.role}
+          >
             <div
               style={{
                 transform: isBouncing ? 'scale(1.2)' : 'scale(1)',
@@ -76,11 +132,28 @@ export function DrinkToolbar({ onConsume, onPause, disabled = false, isActive }:
                 cooldownProgress={progress}
                 size={64}
                 isActive={isActive}
-                onClick={isDisabled ? undefined : () => handleClick(drinkType)}
+                buttonLabel={`Drink ${drink.name}`}
+                disabled={isDisabled}
+                describedBy={statusId}
+                onClick={() => handleClick(drinkType)}
               />
             </div>
             <span className="mt-1 text-[10px] leading-tight text-gray-400">{drink.name}</span>
             <span className="text-[10px] leading-tight text-amber-400">{getCaffeineLabel(drinkType)}</span>
+            <span className="max-w-full truncate text-[10px] font-semibold leading-tight text-cyan-200">
+              {strategy.role}
+            </span>
+            <span className="h-3 max-w-full truncate text-[9px] leading-tight text-gray-400">
+              {strategyCue}
+            </span>
+            <span
+              id={statusId}
+              className="h-3 text-[10px] leading-tight text-gray-300"
+              data-testid={`drink-${drinkType}-status`}
+              aria-live="polite"
+            >
+              {statusText}
+            </span>
 
             {floatingItems
               .filter((f) => f.drinkType === drinkType)
@@ -110,4 +183,25 @@ export function DrinkToolbar({ onConsume, onPause, disabled = false, isActive }:
       </button>
     </div>
   );
+}
+
+function getStrategyCue(
+  drinkType: DrinkType,
+  baseline: string,
+  strategyContext?: DrinkToolbarProps['strategyContext'],
+): string {
+  if (!strategyContext) return baseline;
+
+  const { caffeineLevel, healthLevel, nextEventTitle, optimalZone } = strategyContext;
+  const [minOptimal, maxOptimal] = optimalZone;
+
+  if (drinkType === 'water' && healthLevel < 70) return 'Recover HP';
+  if (drinkType === 'tea' && caffeineLevel >= minOptimal && caffeineLevel <= maxOptimal) return 'Hold zone';
+  if (drinkType === 'coffee' && caffeineLevel < minOptimal) return 'Enter zone';
+  if ((drinkType === 'espresso' || drinkType === 'energyDrink') && nextEventTitle) {
+    return `Prep ${nextEventTitle}`;
+  }
+  if (caffeineLevel > maxOptimal - 8 && drinkType !== 'water') return 'Overheat risk';
+
+  return baseline;
 }
