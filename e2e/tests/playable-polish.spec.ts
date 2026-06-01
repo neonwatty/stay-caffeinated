@@ -31,13 +31,16 @@ test.describe('Playable polish slice', () => {
 
     await expect(coffee).toHaveAttribute('data-cooldown', '3000');
     await expect(coffee).toHaveAttribute('data-strategy-role', 'Steady lift');
+    await expect(coffee).toHaveAttribute('data-effect-tradeoff', 'moderate +30, crash -5');
     await expect(tea).toHaveAttribute('data-cooldown', '2000');
     await expect(tea).toHaveAttribute('data-strategy-role', 'Fine tune');
+    await expect(tea).toHaveAttribute('data-effect-tradeoff', 'slow +15, crash -2');
 
     await page.getByRole('button', { name: 'Drink Coffee' }).click();
     await expect(coffee).toHaveAttribute('data-disabled', 'true');
     await expect(page.getByRole('button', { name: 'Drink Coffee' })).toBeDisabled();
     await expect(page.getByTestId('drink-coffee-status')).toContainText(/Cooling down \d+s/);
+    await expect(page.getByTestId('drink-coffee-status')).toContainText(/releasing|crash risk/);
 
     await page.getByRole('button', { name: 'Drink Tea' }).click();
     await expect(tea).toHaveAttribute('data-disabled', 'true');

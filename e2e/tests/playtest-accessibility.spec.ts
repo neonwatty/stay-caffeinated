@@ -24,6 +24,7 @@ test.describe('Playtest accessibility slice', () => {
     await coffee.click();
     await expect(coffee).toBeDisabled();
     await expect(page.getByTestId('drink-coffee-status')).toContainText(/Cooling down \d+s/);
+    await expect(page.getByTestId('drink-coffee-status')).toContainText(/releasing|crash risk/);
 
     await expect(page.getByTestId('strategy-panel')).toBeVisible();
     await expect(page.getByTestId('shift-status')).toContainText(/% complete/);

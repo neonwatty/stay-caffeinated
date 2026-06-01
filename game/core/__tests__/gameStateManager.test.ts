@@ -14,7 +14,7 @@ describe('GameStateManager', () => {
     it('should initialize with default state', () => {
       const state = gameManager.getState();
       expect(state.state).toBe('menu');
-      expect(state.stats.currentCaffeineLevel).toBe(50);
+      expect(state.stats.currentCaffeineLevel).toBe(40);
       expect(state.stats.currentHealthLevel).toBe(100);
       expect(state.stats.drinksConsumed).toBe(0);
       expect(state.stats.score).toBe(0);
@@ -43,7 +43,7 @@ describe('GameStateManager', () => {
       expect(gameManager.getCurrentState()).toBe('playing');
       const state = gameManager.getState();
       expect(state.startTime).toBeGreaterThan(0);
-      expect(state.stats.currentCaffeineLevel).toBe(50);
+      expect(state.stats.currentCaffeineLevel).toBe(40);
       expect(state.stats.currentHealthLevel).toBe(100);
     });
 
@@ -95,7 +95,7 @@ describe('GameStateManager', () => {
       const state = gameManager.getState();
       expect(state.state).toBe('menu');
       expect(state.stats.drinksConsumed).toBe(0);
-      expect(state.stats.currentCaffeineLevel).toBe(50);
+      expect(state.stats.currentCaffeineLevel).toBe(40);
     });
   });
 
@@ -106,10 +106,10 @@ describe('GameStateManager', () => {
 
     it('should update caffeine level within bounds', () => {
       gameManager.updateCaffeineLevel(20);
-      expect(gameManager.getStats().currentCaffeineLevel).toBe(70);
+      expect(gameManager.getStats().currentCaffeineLevel).toBe(60);
 
       gameManager.updateCaffeineLevel(-30);
-      expect(gameManager.getStats().currentCaffeineLevel).toBe(40);
+      expect(gameManager.getStats().currentCaffeineLevel).toBe(30);
     });
 
     it('should not exceed maximum caffeine level', () => {
@@ -125,11 +125,45 @@ describe('GameStateManager', () => {
     it('should track drinks consumed', () => {
       gameManager.consumeDrink(15);
       expect(gameManager.getStats().drinksConsumed).toBe(1);
-      expect(gameManager.getStats().currentCaffeineLevel).toBe(65);
+      expect(gameManager.getStats().currentCaffeineLevel).toBe(43);
 
       gameManager.consumeDrink(10);
       expect(gameManager.getStats().drinksConsumed).toBe(2);
-      expect(gameManager.getStats().currentCaffeineLevel).toBe(75);
+      expect(gameManager.getStats().currentCaffeineLevel).toBe(53);
+    });
+
+    it('releases coffee over time before applying a bounded crash', () => {
+      vi.spyOn(performance, 'now').mockImplementation(() => 0);
+      gameManager.startGame();
+
+      gameManager.consumeDrink(30);
+      expect(gameManager.getStats().currentCaffeineLevel).toBeCloseTo(50.5, 1);
+      expect(gameManager.getState().recentDrinkConsequences[0]).toContain('Coffee');
+
+      gameManager.update(1000);
+      expect(gameManager.getStats().currentCaffeineLevel).toBeCloseTo(60, 1);
+
+      gameManager.update(2000);
+      expect(gameManager.getStats().currentCaffeineLevel).toBeCloseTo(69.5, 1);
+
+      gameManager.update(6000);
+      expect(gameManager.getStats().currentCaffeineLevel).toBeCloseTo(63.5, 1);
+      expect(gameManager.getState().activeDrinkEffects).toHaveLength(0);
+
+      vi.restoreAllMocks();
+    });
+
+    it('uses water to stabilize pending drink crashes without adding caffeine', () => {
+      gameManager.consumeDrink(30);
+      expect(gameManager.getState().activeDrinkEffects[0].crashRemaining).toBe(5);
+
+      gameManager.consumeDrink(0);
+
+      const state = gameManager.getState();
+      expect(state.stats.drinksConsumed).toBe(2);
+      expect(state.stats.currentCaffeineLevel).toBeCloseTo(50.5, 1);
+      expect(state.activeDrinkEffects[0].crashRemaining).toBe(2.5);
+      expect(state.recentDrinkConsequences[0]).toContain('Water stabilized');
     });
   });
 
@@ -142,7 +176,7 @@ describe('GameStateManager', () => {
       gameManager.setDifficulty('junior');
 
       // Junior has 40-width zone (30-70)
-      gameManager.updateCaffeineLevel(-15); // 35
+      gameManager.updateCaffeineLevel(-5); // 35
       expect(gameManager.getStats().isInOptimalZone).toBe(true);
 
       gameManager.updateCaffeineLevel(-10); // 25
@@ -153,10 +187,10 @@ describe('GameStateManager', () => {
       gameManager.setDifficulty('senior');
 
       // Senior has 30-width zone (35-65)
-      gameManager.updateCaffeineLevel(5); // 55
+      gameManager.updateCaffeineLevel(5); // 45
       expect(gameManager.getStats().isInOptimalZone).toBe(true);
 
-      gameManager.updateCaffeineLevel(10); // 65 - exactly at the upper boundary
+      gameManager.updateCaffeineLevel(20); // 65 - exactly at the upper boundary
       expect(gameManager.getStats().isInOptimalZone).toBe(true);
 
       gameManager.updateCaffeineLevel(1); // 66 - should be outside range

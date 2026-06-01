@@ -5,6 +5,7 @@ import { DrinkIcon } from '@/components/game/drinks/DrinkIcon';
 import { FloatingText } from '@/components/game/play/FloatingText';
 import { DRINKS } from '@/game/data/drinks';
 import { useDrinkCooldown } from '@/hooks/useDrinkCooldown';
+import type { Drink } from '@/types';
 import type { DrinkType } from '@/types/drinks';
 
 interface DrinkToolbarProps {
@@ -29,11 +30,11 @@ interface FloatingItem {
 const TOOLBAR_DRINKS: DrinkType[] = ['tea', 'coffee', 'espresso', 'energyDrink', 'water'];
 
 const DRINK_STRATEGY: Record<DrinkType, { role: string; baseline: string }> = {
-  tea: { role: 'Fine tune', baseline: 'Small lift, short cooldown' },
-  coffee: { role: 'Steady lift', baseline: 'Reliable zone entry' },
-  espresso: { role: 'Fast spike', baseline: 'Quick prep before events' },
-  energyDrink: { role: 'Emergency', baseline: 'Huge boost, long cooldown' },
-  water: { role: 'Recover', baseline: 'Heal without caffeine' },
+  tea: { role: 'Fine tune', baseline: 'Slow lift, soft crash' },
+  coffee: { role: 'Steady lift', baseline: 'Partial now, steady tail' },
+  espresso: { role: 'Fast spike', baseline: 'Big now, notable crash' },
+  energyDrink: { role: 'Emergency', baseline: 'Huge now, harsh crash' },
+  water: { role: 'Recover', baseline: 'Heal and stabilize' },
 };
 
 function getCaffeineLabel(drinkType: DrinkType): string {
@@ -43,20 +44,22 @@ function getCaffeineLabel(drinkType: DrinkType): string {
 }
 
 function getDrinkStatusText(
+  drink: Drink,
   locked: boolean,
   remainingLockSeconds: number,
   onCooldown: boolean,
   remainingCooldownSeconds: number,
+  remainingCooldownMs: number,
 ): string {
   if (locked) {
     return remainingLockSeconds > 0 ? `Locked ${remainingLockSeconds}s` : 'Locked';
   }
 
   if (onCooldown) {
-    return `Cooling down ${remainingCooldownSeconds}s`;
+    return `Cooling down ${remainingCooldownSeconds}s · ${getActiveEffectText(drink, remainingCooldownMs)}`;
   }
 
-  return 'Ready';
+  return `Ready · ${getEffectSummary(drink)}`;
 }
 
 export function DrinkToolbar({
@@ -105,10 +108,12 @@ export function DrinkToolbar({
         const strategyCue = getStrategyCue(drinkType, strategy.baseline, strategyContext);
         const statusId = `drink-${drinkType}-status`;
         const statusText = getDrinkStatusText(
+          drink,
           disabled,
           drinkRestrictionRemainingSeconds,
           onCooldown,
           cooldownState.remainingSeconds,
+          cooldownState.remainingTime,
         );
 
         return (
@@ -119,6 +124,7 @@ export function DrinkToolbar({
             data-cooldown={drink.cooldown}
             data-disabled={isDisabled}
             data-strategy-role={strategy.role}
+            data-effect-tradeoff={getEffectSummary(drink)}
           >
             <div
               style={{
@@ -204,4 +210,21 @@ function getStrategyCue(
   if (caffeineLevel > maxOptimal - 8 && drinkType !== 'water') return 'Overheat risk';
 
   return baseline;
+}
+
+function getEffectSummary(drink: Drink): string {
+  if (drink.id === 'water') return 'Stabilizes crash';
+
+  return `${drink.releaseProfile} +${drink.caffeineBoost}, crash -${drink.crashSeverity}`;
+}
+
+function getActiveEffectText(drink: Drink, remainingCooldownMs: number): string {
+  if (drink.id === 'water') return 'stabilizing';
+
+  const elapsedCooldown = Math.max(0, drink.cooldown - remainingCooldownMs);
+  if (elapsedCooldown < drink.releaseSpeed) {
+    return `releasing, crash -${drink.crashSeverity}`;
+  }
+
+  return `crash risk -${drink.crashSeverity}`;
 }
