@@ -2,7 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Mock must be defined before imports that use it
-vi.mock('@/lib/anime');
+vi.mock('@/lib/anime', () => {
+  const animate = vi.fn();
+  animate.timeline = vi.fn();
+  animate.remove = vi.fn();
+  animate.random = vi.fn();
+  animate.stagger = vi.fn();
+
+  return {
+    default: animate,
+  };
+});
 
 import { useAnimation, useTimeline, useScrollAnimation } from '../useAnimation';
 import anime from '@/lib/anime';
@@ -10,6 +20,8 @@ import anime from '@/lib/anime';
 // Cast anime to mock functions
 const animeMock = anime as unknown as {
   mockImplementation: (fn: () => unknown) => void;
+  mockReturnValue: (value: unknown) => void;
+  mock: { calls: unknown[][] };
   timeline: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
   random: ReturnType<typeof vi.fn>;
@@ -77,8 +89,8 @@ describe('useAnimation', () => {
       rerender({ duration: 1001, easing: 'linear' });
 
       expect(animeMock).toHaveBeenCalledWith(
+        div,
         expect.objectContaining({
-          targets: div,
           autoplay: true,
           duration: 1001,
           easing: 'linear'
@@ -109,6 +121,7 @@ describe('useAnimation', () => {
       rerender({ autoplay: false, duration: 501 });
 
       expect(animeMock).toHaveBeenCalledWith(
+        div,
         expect.objectContaining({
           autoplay: false,
           duration: 501
@@ -517,8 +530,8 @@ describe('useScrollAnimation', () => {
 
       // The hook should have called handleScroll on mount, which checks initial position
       expect(animeMock).toHaveBeenCalledWith(
+        div,
         expect.objectContaining({
-          targets: div,
           translateY: [-50, 0],
           opacity: [0, 1]
         })

@@ -154,8 +154,8 @@ describe('Screen Effects Utilities', () => {
       const result = applyScreenShake(element, 0.5, 1000);
 
       expect(animeMock).toHaveBeenCalledWith(
+        element,
         expect.objectContaining({
-          targets: element,
           easing: 'easeOutElastic(1, 0.5)',
         })
       );
@@ -179,8 +179,8 @@ describe('Screen Effects Utilities', () => {
       const result = applyBlurEffect(element, 0.5);
 
       expect(animeMock).toHaveBeenCalledWith(
+        element,
         expect.objectContaining({
-          targets: element,
           filter: 'blur(2.5px)',
           duration: 300,
           easing: 'easeInOutQuad',
@@ -268,8 +268,8 @@ describe('Screen Effects Utilities', () => {
       const result = applyGlitchEffect(element, 0.5);
 
       expect(animeMock).toHaveBeenCalledWith(
+        element,
         expect.objectContaining({
-          targets: element,
           easing: 'steps(5)',
         })
       );
@@ -291,8 +291,8 @@ describe('Screen Effects Utilities', () => {
       const result = applyContinuousJitter(element, 0.5);
 
       expect(animeMock).toHaveBeenCalledWith(
+        element,
         expect.objectContaining({
-          targets: element,
           duration: 50,
           easing: 'linear',
           loop: true,

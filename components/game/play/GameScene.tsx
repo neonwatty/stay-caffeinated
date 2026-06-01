@@ -78,6 +78,19 @@ interface ActiveEffect {
 }
 
 type SpritePressure = 'none' | 'drink' | 'event';
+type PrepTiming = 'early' | 'timed' | 'late';
+type PrepMatch = 'strong' | 'partial' | 'poor';
+
+interface EventPrepRecord {
+  eventType: EventType;
+  eventTitle: string;
+  drinkType: DrinkType;
+  drinkName: string;
+  distanceToEvent: number;
+  timing: PrepTiming;
+  zoneAtPrep: string;
+  match: PrepMatch;
+}
 
 export interface StrategyRunSummary {
   drinkChoices: string[];
@@ -126,7 +139,7 @@ export function GameScene({ character, onStrategySummaryChange }: GameSceneProps
   const [now, setNow] = useState(() => Date.now());
   const [drinkChoices, setDrinkChoices] = useState<string[]>([]);
   const [eventsHandled, setEventsHandled] = useState<string[]>([]);
-  const [preparedEvents, setPreparedEvents] = useState<string[]>([]);
+  const [eventPrepRecords, setEventPrepRecords] = useState<EventPrepRecord[]>([]);
   const [eventOutcomes, setEventOutcomes] = useState<string[]>([]);
   const [spritePressure, setSpritePressure] = useState<SpritePressure>('none');
   const firedEventsRef = useRef<Set<EventType>>(new Set());
@@ -153,7 +166,7 @@ export function GameScene({ character, onStrategySummaryChange }: GameSceneProps
           caffeinePercentage,
           healthPercentage,
           [optimalZoneRange.min, optimalZoneRange.max],
-          preparedEvents,
+          eventPrepRecords,
         );
         setEventOutcomes((prev) => [...prev.slice(-4), eventPressure.summary]);
 
@@ -200,7 +213,7 @@ export function GameScene({ character, onStrategySummaryChange }: GameSceneProps
     healHealth,
     optimalZoneRange.min,
     optimalZoneRange.max,
-    preparedEvents,
+    eventPrepRecords,
   ]);
 
   useEffect(() => {
@@ -266,9 +279,17 @@ export function GameScene({ character, onStrategySummaryChange }: GameSceneProps
       spriteFeedbackTimerRef.current = setTimeout(() => setSpritePressure('none'), 900);
 
       if (inPrepWindow && upcomingEvent) {
-        setPreparedEvents((prev) => (
-          prev.includes(upcomingEvent.title) ? prev : [...prev, upcomingEvent.title]
-        ));
+        const prepRecord = buildEventPrepRecord(
+          upcomingEvent,
+          drinkType,
+          distanceToEvent,
+          caffeinePercentage,
+          [optimalZoneRange.min, optimalZoneRange.max],
+        );
+        setEventPrepRecords((prev) => [
+          ...prev.filter((record) => record.eventType !== upcomingEvent.type),
+          prepRecord,
+        ]);
       }
     },
     [
@@ -300,6 +321,16 @@ export function GameScene({ character, onStrategySummaryChange }: GameSceneProps
     ? Math.max(0, Math.ceil((activeEffect.endsAt - now) / 1000))
     : 0;
   const eventDistance = nextEvent ? Math.max(0, Math.ceil(nextEvent.threshold - timeProgress)) : 0;
+  const preparedEvents = useMemo(
+    () => eventPrepRecords.map((record) => describePrepRecord(record)),
+    [eventPrepRecords],
+  );
+  const nextEventPrep = nextEvent
+    ? findPrepForEvent(eventPrepRecords, nextEvent)
+    : null;
+  const activeEventPrep = activeEffect
+    ? findPrepForEvent(eventPrepRecords, activeEffect.event)
+    : null;
   const caffeineZoneLabel = getCaffeineZoneLabel(
     caffeinePercentage,
     [optimalZoneRange.min, optimalZoneRange.max],
@@ -413,7 +444,9 @@ export function GameScene({ character, onStrategySummaryChange }: GameSceneProps
               <>
                 <p className="truncate text-base font-bold leading-tight">{nextEvent.title}</p>
                 <p className="text-xs text-gray-200">
-                  In {eventDistance}% - {nextEvent.planningHint}
+                  {nextEventPrep
+                    ? `Prep: ${describePrepRecord(nextEventPrep)}`
+                    : `In ${eventDistance}% - ${nextEvent.planningHint}`}
                 </p>
               </>
             ) : (
@@ -430,6 +463,11 @@ export function GameScene({ character, onStrategySummaryChange }: GameSceneProps
               <>
                 <p className="truncate text-base font-bold leading-tight">{activeEffect.event.title}</p>
                 <p className="text-xs text-gray-200">{currentStatusLabel}</p>
+                {activeEventPrep && (
+                  <p className="truncate text-xs text-amber-100">
+                    Prep: {describePrepRecord(activeEventPrep)}
+                  </p>
+                )}
               </>
             ) : (
               <>
@@ -515,6 +553,71 @@ function describeDrinkDecision(
   return `${getDrinkName(drinkType)} maintained focus for the final stretch`;
 }
 
+function buildEventPrepRecord(
+  event: GameEvent,
+  drinkType: DrinkType,
+  distanceToEvent: number,
+  caffeineLevel: number,
+  optimalZone: [number, number],
+): EventPrepRecord {
+  const drinkName = getDrinkName(drinkType);
+  const zoneAtPrep = getCaffeineZoneLabel(caffeineLevel, optimalZone);
+  const timing = getPrepTiming(distanceToEvent);
+  const match = getPrepMatch(event, drinkType, timing, zoneAtPrep);
+
+  return {
+    eventType: event.type,
+    eventTitle: event.title,
+    drinkType,
+    drinkName,
+    distanceToEvent: Math.max(0, Math.ceil(distanceToEvent)),
+    timing,
+    zoneAtPrep,
+    match,
+  };
+}
+
+function getPrepTiming(distanceToEvent: number): PrepTiming {
+  if (distanceToEvent <= 3) return 'late';
+  if (distanceToEvent <= 8) return 'timed';
+  return 'early';
+}
+
+function getPrepMatch(
+  event: GameEvent,
+  drinkType: DrinkType,
+  timing: PrepTiming,
+  zoneAtPrep: string,
+): PrepMatch {
+  if (event.type === 'codeReview') {
+    const steadyDrink = drinkType === 'tea' || drinkType === 'coffee';
+    if (steadyDrink && timing !== 'late' && zoneAtPrep === 'Green zone') return 'strong';
+    if (steadyDrink || zoneAtPrep === 'Green zone') return 'partial';
+    return 'poor';
+  }
+
+  if (event.type === 'lunchBreak') {
+    if (drinkType === 'water') return 'strong';
+    if (drinkType === 'tea') return 'partial';
+    return 'poor';
+  }
+
+  if (drinkType === 'water') return 'partial';
+  if (timing === 'late') return 'partial';
+  return 'strong';
+}
+
+function findPrepForEvent(
+  records: EventPrepRecord[],
+  event: GameEvent,
+): EventPrepRecord | null {
+  return records.find((record) => record.eventType === event.type) ?? null;
+}
+
+function describePrepRecord(record: EventPrepRecord): string {
+  return `${record.drinkName} -> ${record.eventTitle}, ${record.distanceToEvent}% away, ${record.zoneAtPrep}, timing: ${record.timing}`;
+}
+
 function getDrinkName(drinkType: DrinkType): string {
   switch (drinkType) {
     case 'tea':
@@ -545,16 +648,31 @@ function evaluateEventPressure(
   caffeineLevel: number,
   healthLevel: number,
   optimalZone: [number, number],
-  preparedEvents: string[],
+  eventPrepRecords: EventPrepRecord[],
 ): { healthDelta: number; summary: string } {
   const inZone = caffeineLevel >= optimalZone[0] && caffeineLevel <= optimalZone[1];
-  const prepared = preparedEvents.includes(event.title);
+  const prepRecord = findPrepForEvent(eventPrepRecords, event);
+  const strongPrep = prepRecord?.match === 'strong';
 
   if (event.type === 'lunchBreak') {
-    if (healthLevel < 85 || prepared) {
+    if (strongPrep && prepRecord.drinkType === 'water') {
       return {
-        healthDelta: 4,
-        summary: 'Lunch Break rewarded recovery planning with a small health boost',
+        healthDelta: 6,
+        summary: `Lunch Break rewarded water prep (${describePrepRecord(prepRecord)}) with a health boost`,
+      };
+    }
+
+    if (prepRecord) {
+      return {
+        healthDelta: -3,
+        summary: `Lunch Break wanted recovery prep; ${prepRecord.drinkName} was caffeine-only planning`,
+      };
+    }
+
+    if (healthLevel < 85) {
+      return {
+        healthDelta: 2,
+        summary: 'Lunch Break recovered a little health, but no water prep was ready',
       };
     }
 
@@ -565,10 +683,17 @@ function evaluateEventPressure(
   }
 
   if (event.type === 'codeReview') {
-    if (inZone && prepared) {
+    if (inZone && strongPrep && prepRecord) {
       return {
         healthDelta: 0,
-        summary: 'Code Review was handled because caffeine was pre-loaded in the green zone',
+        summary: `Code Review held because ${describePrepRecord(prepRecord)} matched the lockout`,
+      };
+    }
+
+    if (prepRecord) {
+      return {
+        healthDelta: -8,
+        summary: `Code Review saw ${describePrepRecord(prepRecord)}, but the prep was not steady and green enough`,
       };
     }
 
@@ -592,7 +717,7 @@ function evaluateEventPressure(
     };
   }
 
-  if (inZone || prepared) {
+  if (inZone || strongPrep) {
     return {
       healthDelta: 0,
       summary: `${event.title} was handled with caffeine in the green zone`,

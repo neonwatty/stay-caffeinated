@@ -1,8 +1,31 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import GameTestPage from '@/app/game-test/page';
+
+function getProgressPanel(): HTMLElement {
+  return screen.getByRole('heading', { name: 'Progress' }).closest('div') as HTMLElement;
+}
+
+function getProgressText(label: string): HTMLElement {
+  return within(getProgressPanel()).getByText(new RegExp(`^${label}:`));
+}
+
+function getProgressNumber(label: string): number {
+  return parseFloat(getProgressText(label).textContent?.match(/[\d.]+/)?.[0] ?? '0');
+}
+
+function getOptimalZoneWidth(): number {
+  const zoneText = within(getProgressPanel()).getByText(/Optimal:/).textContent ?? '';
+  const zoneRange = zoneText.match(/(\d+)-(\d+)/);
+  return zoneRange ? parseInt(zoneRange[2]) - parseInt(zoneRange[1]) : 0;
+}
+
+function getStatValue(label: string): string {
+  const labelElement = screen.getByText(label, { selector: 'span.text-gray-400.block' });
+  return labelElement.parentElement?.querySelector('.font-bold')?.textContent ?? '';
+}
 
 describe('E2E Game Scenarios', () => {
   beforeEach(() => {
@@ -56,10 +79,7 @@ describe('E2E Game Scenarios', () => {
 
       while (attempts < maxAttempts) {
         // Check caffeine level and drink if needed
-        const caffeineText = screen.getByText(/Caffeine:/);
-        const caffeineValue = parseFloat(
-          caffeineText.textContent?.match(/[\d.]+/)?.[0] || '0'
-        );
+        const caffeineValue = getProgressNumber('Caffeine');
 
         if (caffeineValue < 45 && drinkButtons.length > 0) {
           // Drink coffee to stay in optimal zone
@@ -194,8 +214,7 @@ describe('E2E Game Scenarios', () => {
       }
 
       // Get current stats
-      const drinksBeforePause = screen.getByText(/Drinks Consumed:/)
-        .textContent?.match(/\d+/)?.[0];
+      const drinksBeforePause = getStatValue('Drinks').match(/\d+/)?.[0];
 
       // Pause game
       await act(async () => {
@@ -223,8 +242,7 @@ describe('E2E Game Scenarios', () => {
       expect(screen.getByText('playing')).toBeInTheDocument();
 
       // Verify stats were preserved
-      const drinksAfterResume = screen.getByText(/Drinks Consumed:/)
-        .textContent?.match(/\d+/)?.[0];
+      const drinksAfterResume = getStatValue('Drinks').match(/\d+/)?.[0];
       expect(drinksAfterResume).toBe(drinksBeforePause);
     }, 10000);
   });
@@ -249,15 +267,11 @@ describe('E2E Game Scenarios', () => {
       expect(screen.getByText('playing')).toBeInTheDocument();
 
       // Check optimal zone for intern (widest)
-      const optimalZoneIntern = screen.getByText(/Optimal:/)
-        .textContent?.match(/(\d+)-(\d+)/);
-      const internZoneWidth = optimalZoneIntern
-        ? parseInt(optimalZoneIntern[2]) - parseInt(optimalZoneIntern[1])
-        : 0;
+      const internZoneWidth = getOptimalZoneWidth();
 
       // Return to menu
       await act(async () => {
-        fireEvent.click(screen.getByText('Return to Menu'));
+        fireEvent.click(screen.getByText('Menu'));
       });
 
       await act(async () => {
@@ -279,11 +293,7 @@ describe('E2E Game Scenarios', () => {
       expect(screen.getByText('playing')).toBeInTheDocument();
 
       // Check optimal zone for senior (narrowest)
-      const optimalZoneSenior = screen.getByText(/Optimal:/)
-        .textContent?.match(/(\d+)-(\d+)/);
-      const seniorZoneWidth = optimalZoneSenior
-        ? parseInt(optimalZoneSenior[2]) - parseInt(optimalZoneSenior[1])
-        : 0;
+      const seniorZoneWidth = getOptimalZoneWidth();
 
       // Verify senior has narrower optimal zone than intern
       expect(seniorZoneWidth).toBeLessThan(internZoneWidth);
@@ -391,7 +401,7 @@ describe('E2E Game Scenarios', () => {
 
       // Check that streak was reset (should be low or zero)
       const streak = parseFloat(
-        screen.getByText(/Streak:/).textContent?.match(/[\d.]+/)?.[0] || '0'
+        getStatValue('Streak').match(/[\d.]+/)?.[0] || '0'
       );
       expect(streak).toBeLessThan(2);
     }, 10000);
@@ -432,10 +442,8 @@ describe('E2E Game Scenarios', () => {
       }
 
       // Verify drinks were consumed (look in parent element)
-      const drinksElement = screen.getByText(/Drinks Consumed:/);
-      const drinksText = drinksElement.parentElement?.textContent || '';
       const drinksConsumed = parseInt(
-        drinksText.match(/\d+/)?.[0] || '0'
+        getStatValue('Drinks').match(/\d+/)?.[0] || '0'
       );
       expect(drinksConsumed).toBeGreaterThanOrEqual(0);
 
@@ -509,11 +517,7 @@ describe('E2E Game Scenarios', () => {
       expect(screen.getByText('playing')).toBeInTheDocument();
 
       // Get initial health
-      const healthElement = screen.getByText(/Health:/);
-      const initialHealthText = healthElement.parentElement?.textContent || '';
-      const initialHealth = parseFloat(
-        initialHealthText.match(/[\d.]+/)?.[0] || '100'
-      );
+      const initialHealth = getProgressNumber('Health');
 
       // Don't drink anything - let caffeine deplete
       await act(async () => {
@@ -521,11 +525,7 @@ describe('E2E Game Scenarios', () => {
       });
 
       // Check that health decreased
-      const healthElementAfter = screen.getByText(/Health:/);
-      const finalHealthText = healthElementAfter.parentElement?.textContent || '';
-      const finalHealth = parseFloat(
-        finalHealthText.match(/[\d.]+/)?.[0] || '100'
-      );
+      const finalHealth = getProgressNumber('Health');
       // Health might decrease slightly or stay the same depending on game mechanics
       expect(finalHealth).toBeLessThanOrEqual(initialHealth);
     }, 10000);
@@ -549,9 +549,7 @@ describe('E2E Game Scenarios', () => {
       expect(screen.getByText('playing')).toBeInTheDocument();
 
       // Get initial health
-      const initialHealth = parseInt(
-        screen.getByText(/Health:/).textContent?.match(/\d+/)?.[0] || '100'
-      );
+      const initialHealth = getProgressNumber('Health');
 
       // Drink coffee to get into optimal zone
       const drinkButtons = (await screen.findAllByRole('button')).filter(
@@ -573,9 +571,7 @@ describe('E2E Game Scenarios', () => {
       });
 
       // Check that health is maintained
-      const finalHealth = parseInt(
-        screen.getByText(/Health:/).textContent?.match(/\d+/)?.[0] || '0'
-      );
+      const finalHealth = getProgressNumber('Health');
       expect(finalHealth).toBeGreaterThanOrEqual(initialHealth - 5);
     }, 10000);
   });

@@ -6,6 +6,14 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./vitest-setup.ts'],
+    exclude: [
+      'e2e/**',
+      'playwright-report/**',
+      'test-results/**',
+      'node_modules/**',
+      '.next/**',
+      'dist/**',
+    ],
     // Process isolation settings - use single thread to prevent memory issues
     pool: 'threads',
     poolOptions: {

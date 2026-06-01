@@ -1,6 +1,44 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Playable polish slice', () => {
+  test('event prep records drink type, timing, and zone before Code Review', async ({ page }) => {
+    test.setTimeout(90_000);
+
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Start Shift' }).click();
+    await page.getByRole('button', { name: /Office Worker/ }).click();
+    await page.getByRole('button', { name: 'Start Shift' }).click();
+
+    await expect(page.getByTestId('upcoming-event')).toContainText('Code Review', {
+      timeout: 30_000,
+    });
+
+    await page.getByRole('button', { name: 'Drink Tea' }).click();
+
+    await expect(page.getByTestId('upcoming-event')).toContainText(/Tea.*Code Review/i);
+    await expect(page.getByTestId('upcoming-event')).toContainText(/timing|away|zone/i);
+
+    await expect(page.getByTestId('event-banner')).toContainText('Code Review', {
+      timeout: 35_000,
+    });
+    await expect(page.getByTestId('active-event-status')).toContainText(/Tea.*Code Review/i);
+
+    await expect(page.getByRole('button', { name: 'Drink Water' })).toBeEnabled({
+      timeout: 25_000,
+    });
+    await expect(page.getByTestId('upcoming-event')).toContainText('Lunch Break', {
+      timeout: 20_000,
+    });
+    await expect(page.getByTestId('upcoming-event')).toContainText(/In (?:[1-9]|1[0-2])%/, {
+      timeout: 30_000,
+    });
+
+    await page.getByRole('button', { name: 'Drink Water' }).click();
+
+    await expect(page.getByTestId('upcoming-event')).toContainText(/Water.*Lunch Break/i);
+    await expect(page.getByTestId('upcoming-event')).toContainText(/away.*zone.*timing/i);
+  });
+
   test('shipped route reaches live play with truthful drink and event feedback', async ({ page }) => {
     test.setTimeout(140_000);
 
