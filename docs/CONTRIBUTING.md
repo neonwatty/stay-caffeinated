@@ -243,7 +243,7 @@ animations in all scenarios.
 
 1. **Update documentation** if you changed functionality
 2. **Add tests** for new features
-3. **Run the full test suite** and ensure it passes
+3. **Gather acceptance evidence** using [Acceptance Evidence](ACCEPTANCE_EVIDENCE.md)
 4. **Update the CHANGELOG.md** with your changes
 5. **Ensure your branch is up to date** with main
 
@@ -252,7 +252,8 @@ animations in all scenarios.
 - **Title**: Use a clear, descriptive title
 - **Description**: Explain what changes you made and why
 - **Screenshots**: Include before/after screenshots for UI changes
-- **Testing**: Describe how you tested your changes
+- **Acceptance Evidence**: Describe the user-facing claims, strongest failure
+  mode challenged, and evidence gathered
 - **Issues**: Reference any related issues
 
 ### PR Template
@@ -266,10 +267,12 @@ Brief description of changes
 - [ ] Breaking change
 - [ ] Documentation update
 
-## Testing
-- [ ] Unit tests pass
-- [ ] Manual testing completed
-- [ ] No console errors
+## Acceptance Evidence
+- Claim:
+- Top failure modes considered:
+- Strongest failure mode challenged:
+- Evidence:
+- Remaining assumptions or follow-ups:
 
 ## Screenshots (if applicable)
 [Add screenshots here]
@@ -280,17 +283,18 @@ Brief description of changes
 - [ ] I have commented my code where necessary
 - [ ] I have updated the documentation
 - [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix/feature works
-- [ ] New and existing unit tests pass locally
+- [ ] I have added tests or stronger evidence that challenges the acceptance criteria
+- [ ] New and existing verification passes locally, or any blockers are documented
 ```
 
 ### Review Process
 
 1. **Automated checks** run on all PRs
-2. **Code review** by at least one maintainer
-3. **Testing** in multiple browsers/devices
-4. **Approval** required before merging
-5. **Squash and merge** to keep history clean
+2. **Acceptance evidence check** warns when the PR template evidence fields are blank
+3. **Code review** by at least one maintainer
+4. **Testing** in multiple browsers/devices
+5. **Approval** required before merging
+6. **Squash and merge** to keep history clean
 
 ## 🌟 Recognition
 

@@ -1,0 +1,70 @@
+name: Acceptance Evidence
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  check-pr-body:
+    name: Check PR body
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warn on blank acceptance evidence
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body || "";
+            const warnings = [];
+            const lines = body.split(/\r?\n/);
+            const sectionStart = lines.findIndex((line) => /^##\s+Acceptance Evidence\s*$/.test(line));
+
+            if (sectionStart === -1) {
+              warnings.push("Missing `## Acceptance Evidence` section.");
+            } else {
+              const sectionLines = [];
+              for (let index = sectionStart + 1; index < lines.length; index += 1) {
+                if (/^##\s+/.test(lines[index])) break;
+                sectionLines.push(lines[index]);
+              }
+
+              const section = sectionLines.join("\n");
+              const requiredFields = [
+                "Claim",
+                "Top failure modes considered",
+                "Strongest failure mode challenged",
+                "Evidence",
+                "Remaining assumptions or follow-ups",
+              ];
+
+              for (const field of requiredFields) {
+                const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const fieldMatch = section.match(new RegExp(`^-[ \\t]*${escaped}:[ \\t]*(.*)$`, "mi"));
+                const value = fieldMatch?.[1]?.trim() || "";
+
+                if (!fieldMatch) {
+                  warnings.push(`Missing acceptance evidence field: \`${field}\`.`);
+                } else if (!value || value === "-" || /^\[(add|todo|tbd|fill)/i.test(value)) {
+                  warnings.push(`Blank acceptance evidence field: \`${field}\`.`);
+                }
+              }
+            }
+
+            if (warnings.length > 0) {
+              for (const warning of warnings) {
+                core.warning(warning);
+              }
+
+              await core.summary
+                .addHeading("Acceptance evidence needs attention")
+                .addList(warnings)
+                .addRaw("This check is advisory. Fill in the PR template so reviewers can see what claim was challenged and what evidence could have falsified it.")
+                .write();
+            } else {
+              await core.summary
+                .addHeading("Acceptance evidence present")
+                .addRaw("The PR body includes the expected acceptance evidence fields.")
+                .write();
+            }
