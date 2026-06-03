@@ -72,10 +72,25 @@ export function CaffeineMeterSVG({
     }
     const steamOpacity = t < 0.15 ? 0 : Math.min((t - 0.15) * 1.5, 0.7);
     const isLow = t < 0.3;
-    const isHigh = t > 0.7;
+    const isOverCaffeinated = t > 0.7;
+    const isTripped = t > 0.95;
+    const isHigh = isOverCaffeinated && !isTripped;
     const isOptimal = t >= 0.3 && t <= 0.7;
     const isDanger = health < 20;
-    return { fillPct, hue, sat, light, steamOpacity, isLow, isHigh, isOptimal, isDanger, t };
+    return {
+      fillPct,
+      hue,
+      sat,
+      light,
+      steamOpacity,
+      isLow,
+      isOverCaffeinated,
+      isHigh,
+      isTripped,
+      isOptimal,
+      isDanger,
+      t,
+    };
   }, [level, health]);
 
   const animId = `cm${level}`;
@@ -166,7 +181,7 @@ export function CaffeineMeterSVG({
           />
 
           {/* Bubbles when high caffeine */}
-          {state.isHigh && isActive && (
+          {state.isOverCaffeinated && isActive && (
             <>
               <circle cx="75" cy={liquidTop + 15} r="3" fill={liquidDark} opacity="0.4"
                 style={{ animation: `bubble-cm-${animId} 0.7s infinite` }} />
@@ -190,20 +205,26 @@ export function CaffeineMeterSVG({
         {/* Zone label */}
         {state.isOptimal && (
           <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="10" fontWeight="bold"
-            fill="hsl(120, 50%, 55%)">
+            textAnchor="middle" fill="hsl(120, 50%, 55%)">
             OPTIMAL
           </text>
         )}
         {state.isLow && (
           <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="10" fontWeight="bold"
-            fill="#60A5FA">
+            textAnchor="middle" fill="#60A5FA">
             LOW
           </text>
         )}
         {state.isHigh && (
           <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="10" fontWeight="bold"
-            fill="#F87171">
+            textAnchor="middle" fill="#F87171">
             HIGH
+          </text>
+        )}
+        {state.isTripped && (
+          <text x="165" y={(zoneMinY + zoneMaxY) / 2 + 4} fontSize="9" fontWeight="bold"
+            textAnchor="middle" fill="#E879F9">
+            TRIPPED
           </text>
         )}
 
@@ -218,13 +239,13 @@ export function CaffeineMeterSVG({
           <g opacity={state.steamOpacity} style={{ transition: 'opacity 0.4s ease' }}>
             <line x1="75" y1="45" x2="75" y2="15"
               stroke="rgba(180,180,180,0.5)" strokeWidth="3" strokeLinecap="round"
-              style={{ animation: isActive ? `steam-cm-${animId} ${state.isHigh ? '0.9s' : '2.5s'} infinite` : 'none' }} />
+              style={{ animation: isActive ? `steam-cm-${animId} ${state.isOverCaffeinated ? '0.9s' : '2.5s'} infinite` : 'none' }} />
             <line x1="100" y1="42" x2="100" y2="8"
               stroke="rgba(180,180,180,0.4)" strokeWidth="3" strokeLinecap="round"
-              style={{ animation: isActive ? `steam-cm-${animId} ${state.isHigh ? '0.7s' : '3s'} infinite 0.3s` : 'none' }} />
+              style={{ animation: isActive ? `steam-cm-${animId} ${state.isOverCaffeinated ? '0.7s' : '3s'} infinite 0.3s` : 'none' }} />
             <line x1="125" y1="45" x2="125" y2="12"
               stroke="rgba(180,180,180,0.35)" strokeWidth="3" strokeLinecap="round"
-              style={{ animation: isActive ? `steam-cm-${animId} ${state.isHigh ? '0.8s' : '2.8s'} infinite 0.6s` : 'none' }} />
+              style={{ animation: isActive ? `steam-cm-${animId} ${state.isOverCaffeinated ? '0.8s' : '2.8s'} infinite 0.6s` : 'none' }} />
           </g>
         )}
 
@@ -238,7 +259,7 @@ export function CaffeineMeterSVG({
 
         {/* Level text */}
         <text x="100" y="325" textAnchor="middle" fontSize="16" fontWeight="bold"
-          fill={state.isDanger ? '#EF4444' : state.isOptimal ? '#22C55E' : state.isLow ? '#60A5FA' : '#F87171'}>
+          fill={state.isDanger ? '#EF4444' : state.isTripped ? '#E879F9' : state.isOptimal ? '#22C55E' : state.isLow ? '#60A5FA' : '#F87171'}>
           {level}%
         </text>
       </svg>
