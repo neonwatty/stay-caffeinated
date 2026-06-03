@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { CaffeineMeterSVG } from '@/components/game/ui/CaffeineMeterSVG';
 import { HealthBarSVG } from '@/components/game/ui/HealthBarSVG';
+import { ProductivityGraphSVG } from '@/components/game/ui/ProductivityGraphSVG';
 import { ScoreDisplaySVG } from '@/components/game/ui/ScoreDisplaySVG';
 
 interface GameHUDProps {
@@ -101,6 +102,20 @@ export function GameHUD({
           multiplier={multiplier}
           width={150}
           height={70}
+          isActive={isActive}
+        />
+      </div>
+
+      {/* Right side: Productivity graph */}
+      <div className="absolute right-2" style={{ top: 144 }}>
+        <ProductivityGraphSVG
+          caffeineLevel={caffeineLevel}
+          healthLevel={healthLevel}
+          streak={streak}
+          multiplier={multiplier}
+          timeProgress={timeProgress}
+          width={180}
+          height={96}
           isActive={isActive}
         />
       </div>
