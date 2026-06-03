@@ -14,8 +14,8 @@ interface OfficeWorkerSVGProps {
  * 4 states:
  *   - Sleepy   (0-30):  drooping head, heavy lids, Zzz, blue/grey
  *   - Optimal  (30-70): alert, typing, steam, warm tones
- *   - Wired    (70-90): huge eyes, jittery, sweat, red tint
- *   - Plaid    (90-100): full Spaceballs — speed lines morph to tartan, character blurs
+ *   - Wired    (70-95): huge eyes, jittery, sweat, red tint
+ *   - Tripped  (95-100): color-warped, wide-eyed, maximum jitter
  */
 export function OfficeWorkerSVG({
   caffeineLevel,
@@ -30,45 +30,45 @@ export function OfficeWorkerSVG({
     const t = level / 100;
     const isSleepy = t < 0.3;
     const isOptimal = t >= 0.3 && t < 0.7;
-    const isWired = t >= 0.7 && t < 0.9;
-    const isPlaid = t >= 0.9;
+    const isTripped = t > 0.95;
+    const isWired = t >= 0.7 && !isTripped;
 
     // Head tilt (sleepy droops forward)
-    const headTilt = isSleepy ? 15 * (1 - t / 0.3) : isPlaid ? 0 : 0;
+    const headTilt = isSleepy ? 15 * (1 - t / 0.3) : 0;
     // Eye openness
-    const eyeOpen = isSleepy ? 0.3 + (t / 0.3) * 0.5 : isWired || isPlaid ? 1.4 : 1.0;
+    const eyeOpen = isSleepy ? 0.3 + (t / 0.3) * 0.5 : isWired || isTripped ? 1.4 : 1.0;
     // Pupil size
-    const pupilR = isSleepy ? 3 : isWired ? 5 : isPlaid ? 6 : 4;
+    const pupilR = isSleepy ? 3 : isWired ? 5 : isTripped ? 7 : 4;
     // Mouth
-    const mouthCurve = isSleepy ? -8 : isOptimal ? 12 : isWired ? -5 : 0;
+    const mouthCurve = isSleepy ? -8 : isOptimal ? 12 : isWired ? -5 : isTripped ? -2 : 0;
     // Body hue shift
-    const skinTone = isSleepy ? 'hsl(220, 15%, 78%)' : isWired ? 'hsl(15, 45%, 80%)' : isPlaid ? 'hsl(0, 60%, 85%)' : 'hsl(30, 40%, 82%)';
+    const skinTone = isSleepy ? 'hsl(220, 15%, 78%)' : isWired ? 'hsl(15, 45%, 80%)' : isTripped ? 'hsl(315, 60%, 86%)' : 'hsl(30, 40%, 82%)';
     // Shake intensity
-    const shakeAmt = isWired ? 3 + (t - 0.7) * 15 : isPlaid ? 8 : 0;
+    const shakeAmt = isWired ? 3 + (t - 0.7) * 15 : isTripped ? 8 : 0;
     // Steam
     const steamOpacity = isSleepy ? 0 : isOptimal ? 0.5 + (t - 0.3) * 0.5 : 0.3;
     // Coffee fill
     const coffeeFill = 0.15 + t * 0.7;
     // Number of empty mugs
-    const emptyMugs = isWired ? Math.floor((t - 0.7) * 15) : isPlaid ? 3 : 0;
+    const emptyMugs = isWired ? Math.floor((t - 0.7) * 15) : isTripped ? 3 : 0;
     // Sweat
-    const showSweat = isWired || isPlaid;
+    const showSweat = isWired || isTripped;
     // Bloodshot
-    const bloodshot = isWired || isPlaid;
+    const bloodshot = isWired || isTripped;
     // Typing speed
     const typingSpeed = isSleepy ? 0 : isOptimal ? 1 : isWired ? 3 : 0;
 
     return {
-      t, isSleepy, isOptimal, isWired, isPlaid,
+      t, isSleepy, isOptimal, isWired, isTripped,
       headTilt, eyeOpen, pupilR, mouthCurve, skinTone,
       shakeAmt, steamOpacity, coffeeFill, emptyMugs,
       showSweat, bloodshot, typingSpeed,
     };
   }, [level]);
 
-  // Plaid pattern colors
-  const plaidColors = useMemo(() => ({
-    bg1: '#CC2200', bg2: '#003366', line1: '#FFCC00', line2: '#228B22', line3: '#FFFFFF',
+  // Tripped color grid used only for the highest caffeine state.
+  const tripColors = useMemo(() => ({
+    bg1: '#DB2777', bg2: '#2563EB', line1: '#FACC15', line2: '#22C55E', line3: '#FFFFFF',
   }), []);
 
   const keyframes_css = isActive ? `
@@ -103,7 +103,7 @@ export function OfficeWorkerSVG({
       0% { transform: translateY(0); opacity: 0.7; }
       100% { transform: translateY(15px); opacity: 0; }
     }
-    @keyframes owPlaidFlash-${animId} {
+    @keyframes owTripFlash-${animId} {
       0% { opacity: 0; }
       10% { opacity: 1; }
       100% { opacity: 0; }
@@ -112,9 +112,9 @@ export function OfficeWorkerSVG({
       0% { transform: translateX(-500px); }
       100% { transform: translateX(500px); }
     }
-    @keyframes owPlaidPulse-${animId} {
-      0%, 100% { opacity: 0.85; }
-      50% { opacity: 0.95; }
+    @keyframes owTripPulse-${animId} {
+      0%, 100% { opacity: 0.6; filter: hue-rotate(0deg); }
+      50% { opacity: 0.9; filter: hue-rotate(180deg); }
     }
     @keyframes owBlur-${animId} {
       0%, 100% { filter: blur(0px); transform: translateX(0); }
@@ -135,28 +135,40 @@ export function OfficeWorkerSVG({
   return (
     <div style={{ width, height, display: 'inline-flex' }}>
       {isActive && <style dangerouslySetInnerHTML={{ __html: keyframes_css }} />}
-      <svg viewBox="0 0 400 400" width="100%" height="100%">
+      <svg
+        viewBox="0 0 400 400"
+        width="100%"
+        height="100%"
+        role="img"
+        aria-label={`Office worker is ${
+          state.isSleepy
+            ? 'under-caffeinated'
+            : state.isOptimal
+              ? 'optimally caffeinated'
+              : state.isTripped
+                ? 'tripped out'
+                : 'over-caffeinated'
+        }`}
+      >
         <defs>
-          {/* Plaid pattern */}
-          <pattern id={`plaid-${animId}`} width="40" height="40" patternUnits="userSpaceOnUse">
-            <rect width="40" height="40" fill={plaidColors.bg1} />
-            <rect x="0" y="0" width="20" height="40" fill={plaidColors.bg2} opacity="0.6" />
-            <rect x="0" y="0" width="40" height="20" fill={plaidColors.bg2} opacity="0.4" />
-            <line x1="10" y1="0" x2="10" y2="40" stroke={plaidColors.line1} strokeWidth="2" opacity="0.7" />
-            <line x1="30" y1="0" x2="30" y2="40" stroke={plaidColors.line3} strokeWidth="1" opacity="0.5" />
-            <line x1="0" y1="10" x2="40" y2="10" stroke={plaidColors.line2} strokeWidth="2" opacity="0.6" />
-            <line x1="0" y1="30" x2="40" y2="30" stroke={plaidColors.line1} strokeWidth="1.5" opacity="0.5" />
-            <line x1="20" y1="0" x2="20" y2="40" stroke={plaidColors.line3} strokeWidth="0.5" opacity="0.3" />
-            <line x1="0" y1="20" x2="40" y2="20" stroke={plaidColors.line3} strokeWidth="0.5" opacity="0.3" />
+          {/* Tripped pattern */}
+          <pattern id={`trip-${animId}`} width="40" height="40" patternUnits="userSpaceOnUse">
+            <rect width="40" height="40" fill={tripColors.bg1} />
+            <circle cx="12" cy="12" r="15" fill={tripColors.bg2} opacity="0.45" />
+            <circle cx="32" cy="28" r="12" fill={tripColors.line2} opacity="0.35" />
+            <line x1="10" y1="0" x2="10" y2="40" stroke={tripColors.line1} strokeWidth="2" opacity="0.7" />
+            <line x1="30" y1="0" x2="30" y2="40" stroke={tripColors.line3} strokeWidth="1" opacity="0.5" />
+            <line x1="0" y1="10" x2="40" y2="10" stroke={tripColors.line2} strokeWidth="2" opacity="0.6" />
+            <line x1="0" y1="30" x2="40" y2="30" stroke={tripColors.line1} strokeWidth="1.5" opacity="0.5" />
           </pattern>
         </defs>
 
-        {/* === PLAID BACKGROUND (90-100%) === */}
-        {state.isPlaid && isActive && (
+        {/* === TRIPPED BACKGROUND (95-100%) === */}
+        {state.isTripped && isActive && (
           <g>
             {/* White flash on entry */}
             <rect width="400" height="400" fill="white"
-              style={{ animation: `owPlaidFlash-${animId} 0.4s ease-out forwards` }} />
+              style={{ animation: `owTripFlash-${animId} 0.4s ease-out forwards` }} />
 
             {/* Speed lines background */}
             {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
@@ -170,21 +182,14 @@ export function OfficeWorkerSVG({
               />
             ))}
 
-            {/* Plaid pattern overlay */}
-            <rect width="400" height="400" fill={`url(#plaid-${animId})`}
-              style={{ animation: `owPlaidPulse-${animId} 0.5s ease-in-out infinite` }} />
-
-            {/* "LUDICROUS SPEED" text */}
-            <text x="200" y="60" fill="#FFDD00" fontSize="22" fontFamily="monospace"
-              textAnchor="middle" fontWeight="bold" opacity="0.9"
-              stroke="#000" strokeWidth="0.8">
-              LUDICROUS SPEED!
-            </text>
+            {/* Color-warp pattern overlay */}
+            <rect width="400" height="400" fill={`url(#trip-${animId})`}
+              style={{ animation: `owTripPulse-${animId} 0.9s ease-in-out infinite` }} />
           </g>
         )}
 
         {/* === NORMAL BACKGROUND === */}
-        {!state.isPlaid && (
+        {!state.isTripped && (
           <g>
             {/* Office wall */}
             <rect width="400" height="260" fill={state.isSleepy ? 'hsl(220, 15%, 25%)' : state.isWired ? 'hsl(10, 20%, 30%)' : 'hsl(35, 15%, 35%)'} />
@@ -193,10 +198,10 @@ export function OfficeWorkerSVG({
           </g>
         )}
 
-        {/* === CHARACTER GROUP (shakes when wired, blurs when plaid) === */}
+        {/* === CHARACTER GROUP (shakes when wired, blurs when tripped) === */}
         <g style={{
-          animation: isActive && (state.isWired || state.isPlaid)
-            ? state.isPlaid
+          animation: isActive && (state.isWired || state.isTripped)
+            ? state.isTripped
               ? `owBlur-${animId} 0.15s infinite, owShake-${animId} 0.08s infinite`
               : `owShake-${animId} ${0.15 - state.shakeAmt * 0.005}s infinite`
             : 'none',
@@ -285,7 +290,7 @@ export function OfficeWorkerSVG({
           <g>
             {/* Torso */}
             <path d="M 170 195 Q 165 240 168 280 L 232 280 Q 235 240 230 195 Z"
-              fill={state.isSleepy ? 'hsl(220, 25%, 45%)' : state.isWired ? 'hsl(0, 40%, 50%)' : state.isPlaid ? 'hsl(350, 50%, 45%)' : 'hsl(210, 30%, 50%)'}
+              fill={state.isSleepy ? 'hsl(220, 25%, 45%)' : state.isWired ? 'hsl(0, 40%, 50%)' : state.isTripped ? 'hsl(290, 55%, 48%)' : 'hsl(210, 30%, 50%)'}
               stroke={state.isSleepy ? 'hsl(220, 20%, 35%)' : state.isWired ? 'hsl(0, 30%, 40%)' : 'hsl(210, 25%, 40%)'}
               strokeWidth="1.5" />
             {/* Collar */}
@@ -347,8 +352,8 @@ export function OfficeWorkerSVG({
             {/* Hair */}
             <path d="M 158 140 Q 158 100 200 95 Q 242 100 242 140 Q 235 115 200 110 Q 165 115 158 140 Z"
               fill={state.isSleepy ? 'hsl(30, 25%, 25%)' : 'hsl(30, 35%, 22%)'} />
-            {/* Messy hair sticking up (wired/plaid) */}
-            {(state.isWired || state.isPlaid) && (
+            {/* Messy hair sticking up (wired/tripped) */}
+            {(state.isWired || state.isTripped) && (
               <g>
                 <path d="M 185 102 Q 182 88 188 85" fill="none" stroke="hsl(30, 35%, 22%)" strokeWidth="3" strokeLinecap="round" />
                 <path d="M 200 98 Q 200 82 205 80" fill="none" stroke="hsl(30, 35%, 22%)" strokeWidth="3" strokeLinecap="round" />
@@ -461,8 +466,8 @@ export function OfficeWorkerSVG({
           )}
         </g>
 
-        {/* === PLAID OVERLAY on character (speed streaks) === */}
-        {state.isPlaid && isActive && (
+        {/* === TRIPPED OVERLAY on character (color streaks) === */}
+        {state.isTripped && isActive && (
           <g opacity="0.3">
             {[0, 1, 2, 3, 4, 5].map(i => (
               <rect key={`cs-${i}`}
@@ -474,15 +479,6 @@ export function OfficeWorkerSVG({
               />
             ))}
           </g>
-        )}
-
-        {/* === PLAID "THEY'VE GONE TO PLAID" text === */}
-        {state.isPlaid && isActive && (
-          <text x="200" y="385" fill="#FFDD00" fontSize="16" fontFamily="monospace"
-            textAnchor="middle" fontWeight="bold" opacity="0.8"
-            stroke="#000" strokeWidth="0.5">
-            They&apos;ve gone to plaid!
-          </text>
         )}
       </svg>
     </div>
