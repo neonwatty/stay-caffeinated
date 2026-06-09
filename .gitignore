@@ -174,3 +174,6 @@ debug-screenshot-*/
 screenshot-*/
 quick-*/
 visual-*/
+
+# GoalBuddy local board output
+docs/goals/**/.goalbuddy-board/

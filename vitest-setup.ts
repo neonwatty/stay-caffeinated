@@ -95,15 +95,23 @@ afterAll(() => {
   }
 });
 
-// Handle process termination
-process.on('exit', () => {
-  // Clear all timers on exit
-  activeTimers.forEach(timer => {
-    originalClearTimeout(timer);
-    originalClearInterval(timer);
+const globalTestCleanupState = globalThis as typeof globalThis & {
+  __stayCaffeinatedExitCleanupRegistered?: boolean;
+};
+
+// Handle process termination once across Vitest's repeated setup loads.
+if (!globalTestCleanupState.__stayCaffeinatedExitCleanupRegistered) {
+  globalTestCleanupState.__stayCaffeinatedExitCleanupRegistered = true;
+
+  process.on('exit', () => {
+    // Clear all timers on exit
+    activeTimers.forEach(timer => {
+      originalClearTimeout(timer);
+      originalClearInterval(timer);
+    });
+    activeTimers.clear();
   });
-  activeTimers.clear();
-});
+}
 
 // Mock the anime wrapper directly
 vi.mock('@/lib/anime', () => {

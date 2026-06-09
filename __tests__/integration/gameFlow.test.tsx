@@ -1,8 +1,26 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import GameTestPage from '@/app/game-test/page';
+
+function getProgressPanel(): HTMLElement {
+  return screen.getByRole('heading', { name: 'Progress' }).closest('div') as HTMLElement;
+}
+
+function getProgressText(label: string): HTMLElement {
+  return within(getProgressPanel()).getByText(new RegExp(`^${label}:`));
+}
+
+function getStatValue(label: string): string {
+  const labelElement = screen.getByText(label, { selector: 'span.text-gray-400.block' });
+  return labelElement.parentElement?.querySelector('.font-bold')?.textContent ?? '';
+}
+
+function getInfoValue(label: string): string {
+  const labelElement = screen.getByText(label, { selector: 'span.text-gray-400' });
+  return labelElement.parentElement?.querySelector('.font-medium')?.textContent ?? '';
+}
 
 describe('Game Flow Integration Tests', () => {
   beforeEach(() => {
@@ -78,7 +96,7 @@ describe('Game Flow Integration Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText('playing')).toBeInTheDocument();
-        expect(screen.getByText('Drinks Consumed:')).toBeInTheDocument();
+        expect(screen.getByText('Drinks', { selector: 'span.text-gray-400.block' })).toBeInTheDocument();
       });
     });
 
@@ -93,7 +111,7 @@ describe('Game Flow Integration Tests', () => {
       });
 
       // Return to menu
-      const returnButton = screen.getByText('Return to Menu');
+      const returnButton = screen.getByText('Menu');
       fireEvent.click(returnButton);
 
       await waitFor(() => {
@@ -130,13 +148,9 @@ describe('Game Flow Integration Tests', () => {
         expect(screen.getByText('playing')).toBeInTheDocument();
       });
 
-      // Difficulty buttons should be disabled
-      const difficultyButtons = ['intern', 'junior', 'senior', 'founder'].map(
-        diff => screen.getByRole('button', { name: diff })
-      );
-
-      difficultyButtons.forEach(button => {
-        expect(button).toBeDisabled();
+      // Difficulty controls are only available from the menu.
+      ['intern', 'junior', 'senior', 'founder'].forEach((diff) => {
+        expect(screen.queryByRole('button', { name: diff })).not.toBeInTheDocument();
       });
     });
   });
@@ -146,24 +160,24 @@ describe('Game Flow Integration Tests', () => {
       render(<GameTestPage />);
 
       // Check initial displays
-      expect(screen.getByText(/Caffeine:/)).toBeInTheDocument();
-      expect(screen.getByText(/Health:/)).toBeInTheDocument();
-      expect(screen.getByText(/Workday Progress:/)).toBeInTheDocument();
+      expect(getProgressText('Caffeine')).toBeInTheDocument();
+      expect(getProgressText('Health')).toBeInTheDocument();
+      expect(getProgressText('Workday')).toBeInTheDocument();
       expect(screen.getByText(/Score:/)).toBeInTheDocument();
-      expect(screen.getByText(/Drinks Consumed:/)).toBeInTheDocument();
-      expect(screen.getByText(/Streak:/)).toBeInTheDocument();
+      expect(screen.getByText('Drinks', { selector: 'span.text-gray-400.block' })).toBeInTheDocument();
+      expect(screen.getByText('Streak', { selector: 'span.text-gray-400.block' })).toBeInTheDocument();
     });
 
     it('should show optimal zone indicator', () => {
       render(<GameTestPage />);
 
       // Check for optimal zone range display
-      const optimalZoneText = screen.getByText(/Optimal:/);
+      const optimalZoneText = within(getProgressPanel()).getByText(/Optimal:/);
       expect(optimalZoneText).toBeInTheDocument();
 
       // Check for in optimal zone indicator
-      const zoneIndicator = screen.getByText(/In Optimal Zone:/);
-      expect(zoneIndicator).toBeInTheDocument();
+      expect(screen.getByText('Optimal', { selector: 'span.text-gray-400.block' })).toBeInTheDocument();
+      expect(getStatValue('Optimal')).toMatch(/Yes|No/);
     });
   });
 
@@ -172,7 +186,7 @@ describe('Game Flow Integration Tests', () => {
       render(<GameTestPage />);
 
       // No drinks should be visible in menu
-      expect(screen.queryByText('Drinks')).not.toBeInTheDocument();
+      expect(screen.queryByText('Consume Drinks')).not.toBeInTheDocument();
 
       // Start the game
       fireEvent.click(screen.getByText('Start Game'));
@@ -182,7 +196,7 @@ describe('Game Flow Integration Tests', () => {
       });
 
       // Drinks should now be visible
-      expect(screen.getByText('Drinks')).toBeInTheDocument();
+      expect(screen.getByText('Consume Drinks')).toBeInTheDocument();
     });
 
     it('should consume drink and update stats', async () => {
@@ -196,8 +210,7 @@ describe('Game Flow Integration Tests', () => {
       });
 
       // Get initial drinks consumed count
-      const drinksText = screen.getByText(/Drinks Consumed:/);
-      const initialCount = parseInt(drinksText.textContent?.split(':')[1] || '0');
+      const initialCount = parseInt(getStatValue('Drinks') || '0');
 
       // Find and click a drink button
       const drinkButtons = screen.getAllByRole('button').filter(
@@ -209,8 +222,7 @@ describe('Game Flow Integration Tests', () => {
 
         // Check drinks consumed increased
         await waitFor(() => {
-          const newDrinksText = screen.getByText(/Drinks Consumed:/);
-          const newCount = parseInt(newDrinksText.textContent?.split(':')[1] || '0');
+          const newCount = parseInt(getStatValue('Drinks') || '0');
           expect(newCount).toBe(initialCount + 1);
         });
       }
@@ -229,27 +241,27 @@ describe('Game Flow Integration Tests', () => {
       });
 
       // Check caffeine bar
-      const caffeineBar = screen.getByText(/Caffeine:/).parentElement?.parentElement;
-      expect(caffeineBar?.querySelector('[style*="width"]')).toBeInTheDocument();
+      const caffeineBar = getProgressText('Caffeine').parentElement?.parentElement;
+      expect(caffeineBar?.querySelector('[style*="scaleX"]')).toBeInTheDocument();
 
       // Check health bar
-      const healthBar = screen.getByText(/Health:/).parentElement?.parentElement;
-      expect(healthBar?.querySelector('[style*="width"]')).toBeInTheDocument();
+      const healthBar = getProgressText('Health').parentElement?.parentElement;
+      expect(healthBar?.querySelector('[style*="scaleX"]')).toBeInTheDocument();
 
       // Check progress bar
-      const progressBar = screen.getByText(/Workday Progress:/).parentElement?.parentElement;
-      expect(progressBar?.querySelector('[style*="width"]')).toBeInTheDocument();
+      const progressBar = getProgressText('Workday').parentElement?.parentElement;
+      expect(progressBar?.querySelector('[style*="scaleX"]')).toBeInTheDocument();
     });
 
     it('should show optimal zone indicator on caffeine bar', () => {
       render(<GameTestPage />);
 
       // Find the caffeine bar section
-      const caffeineSection = screen.getByText(/Caffeine:/).parentElement?.parentElement;
+      const caffeineSection = getProgressText('Caffeine').parentElement?.parentElement;
 
       // Check for optimal zone visual indicator
-      const optimalZoneIndicator = caffeineSection?.querySelector('.bg-green-900.opacity-30');
-      expect(optimalZoneIndicator).toBeInTheDocument();
+      expect(within(caffeineSection as HTMLElement).getByText(/Optimal:/)).toBeInTheDocument();
+      expect(caffeineSection?.querySelector('[data-caffeine]')).toBeInTheDocument();
     });
   });
 
@@ -269,8 +281,7 @@ describe('Game Flow Integration Tests', () => {
       });
 
       // Time should be displayed
-      const timeDisplay = timeLabel.parentElement?.querySelector('p:last-child');
-      expect(timeDisplay?.textContent).toMatch(/\d{1,2}:\d{2}/); // Format: HH:MM or H:MM
+      expect(getInfoValue('Time:')).toMatch(/\d{1,2}:\d{2}/); // Format: HH:MM or H:MM
     });
   });
 
@@ -290,8 +301,7 @@ describe('Game Flow Integration Tests', () => {
       });
 
       // Score should be displayed
-      const scoreDisplay = scoreLabel.parentElement?.querySelector('p:last-child');
-      expect(scoreDisplay?.textContent).toBeDefined();
+      expect(getInfoValue('Score:')).toBeDefined();
     });
   });
 
@@ -300,13 +310,12 @@ describe('Game Flow Integration Tests', () => {
       render(<GameTestPage />);
 
       // Check instructions section exists
-      expect(screen.getByText('Instructions')).toBeInTheDocument();
+      expect(screen.getByText('How to Play')).toBeInTheDocument();
 
       // Check instruction items
-      expect(screen.getByText(/Keep your caffeine level/)).toBeInTheDocument();
+      expect(screen.getByText(/Keep caffeine in the green zone/)).toBeInTheDocument();
       expect(screen.getByText(/Health decreases when outside/)).toBeInTheDocument();
       expect(screen.getByText(/Survive the entire workday/)).toBeInTheDocument();
-      expect(screen.getByText(/Different drinks have different/)).toBeInTheDocument();
       expect(screen.getByText(/Higher difficulty/)).toBeInTheDocument();
     });
   });

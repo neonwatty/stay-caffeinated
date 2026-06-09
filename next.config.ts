@@ -2,10 +2,15 @@ import type { NextConfig } from "next";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 const isProduction = process.env.NODE_ENV === "production";
+const configuredBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? process.env.BASE_PATH ?? "";
+const basePath = configuredBasePath
+  ? `/${configuredBasePath.replace(/^\/+|\/+$/g, "")}`
+  : "";
 
 const nextConfig: NextConfig = {
   output: "export",
-  basePath: isProduction ? "/stay-caffeinated" : "",
+  basePath: basePath || undefined,
+  trailingSlash: true,
   images: {
     unoptimized: true,
     // Optimize image formats in production

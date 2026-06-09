@@ -23,9 +23,9 @@ describe('GameMechanics Integration', () => {
   describe('State Initialization', () => {
     it('should initialize enhanced game state correctly', () => {
       expect(initialState).toBeDefined();
-      expect(initialState.caffeineLevel).toBe(50);
-      expect(initialState.healthLevel).toBe(100);
-      expect(initialState.score).toBe(0);
+      expect(initialState.stats.currentCaffeineLevel).toBe(50);
+      expect(initialState.stats.currentHealthLevel).toBe(100);
+      expect(initialState.stats.score).toBe(0);
       expect(initialState.eventState).toBeDefined();
       expect(initialState.powerUpState).toBeDefined();
       expect(initialState.comboMultiplier).toBe(1);
@@ -119,11 +119,12 @@ describe('GameMechanics Integration', () => {
         const spawn = powerUpSystem.spawnPowerUp(mockPowerUp, 1000);
         initialState.powerUpState.availablePowerUps.push(spawn);
 
+        const previousScore = initialState.stats.score;
         const updatedState = gameMechanics.collectPowerUp(initialState, spawn, 2000);
 
         expect(updatedState.powerUpState.collectedCount).toBe(1);
         expect(updatedState.powerUpState.powerUpHistory).toContain('energyBoost');
-        expect(updatedState.score).toBeGreaterThan(initialState.score);
+        expect(updatedState.stats.score).toBeGreaterThan(previousScore);
       }
     });
 
@@ -270,8 +271,8 @@ describe('GameMechanics Integration', () => {
     });
 
     it('should handle game over during event', () => {
-      initialState.healthLevel = 5;
-      initialState.isGameOver = false;
+      initialState.stats.currentHealthLevel = 5;
+      initialState.state = 'playing';
 
       const eventSystem = new EventSystem();
       const mockEvent = eventSystem.getEvent('bugFix');

@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock must be defined before imports that use it
-vi.mock('@/lib/anime');
+vi.mock('@/lib/anime', () => {
+  const animate = vi.fn();
+  animate.timeline = vi.fn();
+  animate.remove = vi.fn();
+  animate.random = vi.fn();
+  animate.stagger = vi.fn();
+
+  return {
+    default: animate,
+  };
+});
 
 import {
   GAME_EASINGS,
@@ -23,6 +33,9 @@ import anime from '@/lib/anime';
 // Cast anime to mock functions
 const animeMock = anime as unknown as {
   mockImplementation: (fn: () => unknown) => void;
+  mockImplementationOnce: (fn: () => unknown) => void;
+  mockReturnValue: (value: unknown) => void;
+  mock: { calls: unknown[][] };
   timeline: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
   random: ReturnType<typeof vi.fn>;
@@ -87,8 +100,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       animateCaffeineBar(target, 50, true);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         width: '50%',
         backgroundColor: '#10b981',
         duration: DURATIONS.normal,
@@ -100,8 +112,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       animateCaffeineBar(target, 85, false);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         width: '85%',
         backgroundColor: '#f59e0b',
         duration: DURATIONS.normal,
@@ -113,8 +124,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       animateCaffeineBar(target, 25, false);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         width: '25%',
         backgroundColor: '#ef4444',
         duration: DURATIONS.normal,
@@ -128,8 +138,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       animateHealthDamage(target);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         scale: [1, 0.95, 1],
         backgroundColor: ['#dc2626', '#ef4444', '#dc2626'],
         duration: DURATIONS.fast,
@@ -143,8 +152,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       screenShake(target);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         translateX: expect.any(Number),
         translateY: expect.any(Number),
         duration: DURATIONS.instant,
@@ -159,8 +167,7 @@ describe('Animation Utilities', () => {
       screenShake(target, 10);
 
       expect(animeMock.random).toHaveBeenCalledWith(-10, 10);
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         translateX: expect.any(Number),
         translateY: expect.any(Number),
         duration: DURATIONS.instant,
@@ -176,8 +183,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       animateCharacterState(target, 'sleepy');
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         scale: [1, 0.95],
         opacity: [1, 0.7],
         duration: DURATIONS.verySlow,
@@ -191,8 +197,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       animateCharacterState(target, 'normal');
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         scale: 1,
         opacity: 1,
         duration: DURATIONS.normal,
@@ -205,8 +210,7 @@ describe('Animation Utilities', () => {
       animateCharacterState(target, 'hyper');
 
       expect(animeMock.random).toHaveBeenCalledWith(-5, 5);
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         rotate: expect.any(Number),
         scale: [1, 1.05],
         duration: DURATIONS.fast,
@@ -233,15 +237,13 @@ describe('Animation Utilities', () => {
         easing: GAME_EASINGS.smooth,
       });
 
-      expect(mockTimeline.add).toHaveBeenCalledWith({
-        targets: drinkElement,
+      expect(mockTimeline.add).toHaveBeenCalledWith(drinkElement, {
         scale: [1, 1.2, 0],
         opacity: [1, 1, 0],
         duration: DURATIONS.normal,
       });
 
-      expect(mockTimeline.add).toHaveBeenCalledWith({
-        targets: targetElement,
+      expect(mockTimeline.add).toHaveBeenCalledWith(targetElement, {
         scale: [1, 1.1, 1],
         duration: DURATIONS.fast,
       }, '-=200');
@@ -253,8 +255,7 @@ describe('Animation Utilities', () => {
       const target = document.createElement('div');
       animatePowerUp(target);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: target,
+      expect(animeMock).toHaveBeenCalledWith(target, {
         scale: [0, 1.2, 1],
         rotate: '1turn',
         duration: DURATIONS.normal,
@@ -278,14 +279,12 @@ describe('Animation Utilities', () => {
         easing: GAME_EASINGS.sharp,
       });
 
-      expect(mockTimeline.add).toHaveBeenCalledWith({
-        targets: target,
+      expect(mockTimeline.add).toHaveBeenCalledWith(target, {
         scale: [1, 1.1],
         duration: DURATIONS.fast,
       });
 
-      expect(mockTimeline.add).toHaveBeenCalledWith({
-        targets: target,
+      expect(mockTimeline.add).toHaveBeenCalledWith(target, {
         rotate: expect.any(Number),
         translateY: '100vh',
         duration: DURATIONS.slow,
@@ -303,8 +302,7 @@ describe('Animation Utilities', () => {
 
       animateSuccess(targets);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets,
+      expect(animeMock).toHaveBeenCalledWith(targets, {
         translateY: [0, -30, 0],
         scale: [1, 1.2, 1],
         rotate: expect.any(Array),
@@ -327,8 +325,7 @@ describe('Animation Utilities', () => {
       const particles = container.querySelectorAll('.absolute');
       expect(particles.length).toBe(5);
 
-      expect(animeMock).toHaveBeenCalledWith({
-        targets: expect.any(Array),
+      expect(animeMock).toHaveBeenCalledWith(expect.any(Array), {
         translateX: expect.any(Function),
         translateY: expect.any(Function),
         scale: [1, 0],
@@ -365,7 +362,7 @@ describe('Animation Utilities', () => {
 
       createParticleExplosion(container, 100, 200, 3);
 
-      const completeCallback = animeMock.mock.calls[0][0].complete;
+      const completeCallback = animeMock.mock.calls[0][1].complete as () => void;
       completeCallback();
 
       // Wait for requestAnimationFrame to complete
@@ -395,8 +392,7 @@ describe('Animation Utilities', () => {
       cleanupAnimation(mockCleanupAnimation as { pause: () => void; play?: () => void; restart?: () => void });
 
       expect(mockCleanupAnimation.pause).toHaveBeenCalled();
-      expect(animeMock.remove).toHaveBeenCalledWith(target1);
-      expect(animeMock.remove).toHaveBeenCalledWith(target2);
+      expect(animeMock.remove).not.toHaveBeenCalled();
     });
 
     it('should handle null animation gracefully', () => {

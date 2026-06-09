@@ -15,6 +15,9 @@ interface DrinkIconProps {
   size?: number;
   isActive?: boolean;
   onClick?: () => void;
+  buttonLabel?: string;
+  disabled?: boolean;
+  describedBy?: string;
 }
 
 /**
@@ -27,6 +30,9 @@ export function DrinkIcon({
   size = 100,
   isActive = true,
   onClick,
+  buttonLabel,
+  disabled = false,
+  describedBy,
 }: DrinkIconProps) {
   const props = { state, cooldownProgress, size, isActive };
 
@@ -40,21 +46,26 @@ export function DrinkIcon({
     }
   })();
 
-  if (onClick) {
+  if (buttonLabel || onClick) {
+    const isDisabled = disabled || state === 'cooldown';
+
     return (
       <button
-        onClick={onClick}
+        type="button"
+        aria-label={buttonLabel}
+        aria-describedby={describedBy}
+        onClick={isDisabled ? undefined : onClick}
         style={{
           background: 'none',
           border: 'none',
           padding: 0,
-          cursor: state === 'cooldown' ? 'not-allowed' : 'pointer',
-          opacity: state === 'cooldown' ? 0.6 : 1,
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          opacity: isDisabled ? 0.6 : 1,
           transition: 'transform 0.15s ease',
         }}
-        disabled={state === 'cooldown'}
+        disabled={isDisabled}
       >
-        {content}
+        <span aria-hidden="true">{content}</span>
       </button>
     );
   }

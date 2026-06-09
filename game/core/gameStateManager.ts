@@ -2,7 +2,8 @@
  * Game State Manager - Core state management for the game
  */
 
-import type { GameState, GameStats, GameConfig, Difficulty } from '@/types';
+import type { Drink, DrinkType, GameState, GameStats, GameConfig, Difficulty } from '@/types';
+import { DRINKS } from '@/game/data/drinks';
 import {
   CAFFEINE_MAX,
   CAFFEINE_MIN,
@@ -24,11 +25,25 @@ export interface GameStateData {
   gameTime: number; // Current time in the game day (0-workdayLength)
   realTimeElapsed: number;
   isPaused: boolean;
+  activeDrinkEffects?: DrinkEffectState[];
+  recentDrinkConsequences?: string[];
+}
+
+interface DrinkEffectState {
+  id: number;
+  drinkId: DrinkType;
+  releaseRemaining: number;
+  releaseDuration: number;
+  releaseElapsed: number;
+  crashRemaining: number;
+  crashDuration: number;
+  crashElapsed: number;
 }
 
 export class GameStateManager {
   private state: GameStateData;
   private listeners: Set<(state: GameStateData) => void> = new Set();
+  private nextDrinkEffectId = 1;
 
   constructor(config?: Partial<GameConfig>) {
     this.state = this.createInitialState(config);
@@ -60,12 +75,18 @@ export class GameStateManager {
       gameTime: 0,
       realTimeElapsed: 0,
       isPaused: false,
+      activeDrinkEffects: [],
+      recentDrinkConsequences: [],
     };
   }
 
   // State getters
   getState(): GameStateData {
-    return { ...this.state };
+    return {
+      ...this.state,
+      activeDrinkEffects: (this.state.activeDrinkEffects ?? []).map(effect => ({ ...effect })),
+      recentDrinkConsequences: [...(this.state.recentDrinkConsequences ?? [])],
+    };
   }
 
   getCurrentState(): GameState {
@@ -96,6 +117,9 @@ export class GameStateManager {
       streak: 0,
       isInOptimalZone: true,
     };
+    this.state.activeDrinkEffects = [];
+    this.state.recentDrinkConsequences = [];
+    this.nextDrinkEffectId = 1;
     this.notifyListeners();
   }
 
@@ -138,7 +162,46 @@ export class GameStateManager {
   }
 
   consumeDrink(caffeineAmount: number): void {
-    this.updateCaffeineLevel(caffeineAmount);
+    const drink = this.findDrinkForCaffeineAmount(caffeineAmount);
+
+    if (!drink) {
+      this.updateCaffeineLevel(caffeineAmount);
+      this.state.stats.drinksConsumed++;
+      this.addRecentDrinkConsequence(`Quick boost ${formatSignedAmount(caffeineAmount)}`);
+      this.notifyListeners();
+      return;
+    }
+
+    if (drink.id === 'water') {
+      const stabilizedCrash = this.stabilizePendingCrashes();
+      this.addRecentDrinkConsequence(
+        stabilizedCrash > 0 ? `Water stabilized ${stabilizedCrash.toFixed(1)} crash` : 'Water stabilized health',
+      );
+      this.state.stats.drinksConsumed++;
+      this.notifyListeners();
+      return;
+    }
+
+    const immediateRelease = getImmediateRelease(drink);
+    const releaseRemaining = Math.max(0, drink.caffeineBoost - immediateRelease);
+    const crashSeverity = Math.max(0, drink.crashSeverity);
+
+    this.updateCaffeineLevel(immediateRelease);
+    const activeDrinkEffects = this.state.activeDrinkEffects ?? [];
+    activeDrinkEffects.push({
+      id: this.nextDrinkEffectId++,
+      drinkId: drink.id,
+      releaseRemaining,
+      releaseDuration: Math.max(250, drink.releaseSpeed),
+      releaseElapsed: 0,
+      crashRemaining: crashSeverity,
+      crashDuration: 2500 + crashSeverity * 300,
+      crashElapsed: 0,
+    });
+    this.state.activeDrinkEffects = activeDrinkEffects;
+    this.addRecentDrinkConsequence(
+      `${drink.name}: ${formatSignedAmount(immediateRelease)} now, ${formatSignedAmount(releaseRemaining)} release, ${formatSignedAmount(-crashSeverity)} crash`,
+    );
     this.state.stats.drinksConsumed++;
     this.notifyListeners();
   }
@@ -224,6 +287,9 @@ export class GameStateManager {
     const caffeineDepletion = -difficulty.caffeineDepletionRate * (deltaTime / 1000);
     this.updateCaffeineLevel(caffeineDepletion);
 
+    // Update active drink release/crash effects
+    this.updateDrinkEffects(deltaTime);
+
     // Update health
     this.updateHealth(deltaTime);
 
@@ -258,6 +324,68 @@ export class GameStateManager {
     }
   }
 
+  private updateDrinkEffects(deltaTime: number): void {
+    const activeDrinkEffects = this.state.activeDrinkEffects ?? [];
+    if (activeDrinkEffects.length === 0) return;
+
+    let caffeineDelta = 0;
+    const remainingEffects: DrinkEffectState[] = [];
+
+    for (const effect of activeDrinkEffects) {
+      if (effect.releaseRemaining > 0 && effect.releaseElapsed < effect.releaseDuration) {
+        const previousProgress = effect.releaseElapsed / effect.releaseDuration;
+        effect.releaseElapsed = Math.min(effect.releaseDuration, effect.releaseElapsed + deltaTime);
+        const currentProgress = effect.releaseElapsed / effect.releaseDuration;
+        const releaseDelta = effect.releaseRemaining * (currentProgress - previousProgress);
+        caffeineDelta += releaseDelta;
+      } else if (effect.crashRemaining > 0 && effect.crashElapsed < effect.crashDuration) {
+        const previousProgress = effect.crashElapsed / effect.crashDuration;
+        effect.crashElapsed = Math.min(effect.crashDuration, effect.crashElapsed + deltaTime);
+        const currentProgress = effect.crashElapsed / effect.crashDuration;
+        const crashDelta = -effect.crashRemaining * (currentProgress - previousProgress);
+        caffeineDelta += crashDelta;
+      }
+
+      const releaseDone = effect.releaseRemaining <= 0 || effect.releaseElapsed >= effect.releaseDuration;
+      const crashDone = effect.crashRemaining <= 0 || effect.crashElapsed >= effect.crashDuration;
+
+      if (!releaseDone || !crashDone) {
+        remainingEffects.push(effect);
+      }
+    }
+
+    this.state.activeDrinkEffects = remainingEffects;
+
+    if (caffeineDelta !== 0) {
+      this.updateCaffeineLevel(caffeineDelta);
+    }
+  }
+
+  private findDrinkForCaffeineAmount(caffeineAmount: number): Drink | undefined {
+    return DRINKS.find(drink => drink.caffeineBoost === caffeineAmount);
+  }
+
+  private stabilizePendingCrashes(): number {
+    let stabilized = 0;
+
+    const activeDrinkEffects = this.state.activeDrinkEffects ?? [];
+    this.state.activeDrinkEffects = activeDrinkEffects.map(effect => {
+      const reduction = effect.crashRemaining * 0.5;
+      stabilized += reduction;
+
+      return {
+        ...effect,
+        crashRemaining: effect.crashRemaining - reduction,
+      };
+    });
+
+    return stabilized;
+  }
+
+  private addRecentDrinkConsequence(message: string): void {
+    this.state.recentDrinkConsequences = [message, ...(this.state.recentDrinkConsequences ?? [])].slice(0, 3);
+  }
+
   // Configuration
   setDifficulty(difficulty: Difficulty): void {
     this.state.config.difficulty = difficulty;
@@ -279,4 +407,23 @@ export class GameStateManager {
   private notifyListeners(): void {
     this.listeners.forEach(listener => listener(this.getState()));
   }
+}
+
+function getImmediateRelease(drink: Drink): number {
+  const releaseFraction = {
+    instant: 0.65,
+    moderate: 0.35,
+    slow: 0.2,
+  }[drink.releaseProfile];
+
+  return roundToTenth(drink.caffeineBoost * releaseFraction);
+}
+
+function roundToTenth(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function formatSignedAmount(value: number): string {
+  const rounded = roundToTenth(value);
+  return rounded > 0 ? `+${rounded}` : `${rounded}`;
 }

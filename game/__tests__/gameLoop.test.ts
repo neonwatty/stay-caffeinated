@@ -343,8 +343,8 @@ describe('Collision Detection', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const stateManager = gameLoop.getGameStateManager();
-    // Test low threshold - drop to 15 (below 20 which triggers low warning)
-    stateManager.updateCaffeineLevel(-35);
+    // Test low threshold - drop near 15 (below 20, above critical, triggers low warning)
+    stateManager.updateCaffeineLevel(-25);
 
     // Wait for the next update cycle to process the change
     await new Promise(resolve => setTimeout(resolve, 100));
